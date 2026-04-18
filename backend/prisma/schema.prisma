@@ -94,7 +94,7 @@ model Ingredient {
 model Dish {
   id             String           @id @default(cuid())
   name           String
-  imageUrl       String
+  imageUrl       String?
   description    String
   price          Int
   isActive       Boolean          @default(true)
@@ -111,7 +111,7 @@ model DishIngredient {
   dishId       String
   ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
   ingredientId String
-  quantity     Float
+  quantity     Int
 
   @@unique([dishId, ingredientId])
 }

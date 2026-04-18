@@ -62,6 +62,44 @@ export interface FieldErrors {
   [field: string]: string;
 }
 
+export interface DishIngredientItem {
+  id: string;
+  ingredientId: string;
+  name: string;
+  quantity: number;
+  unit: string;
+}
+
+export interface IngredientOption {
+  id: string;
+  name: string;
+  unit: string;
+  availableQty: number;
+}
+
+export interface Dish {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  imageUrl: string | null;
+  isActive: boolean;
+  ingredients: DishIngredientItem[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateDishPayload {
+  name: string;
+  description: string;
+  price: number;
+  imageUrl?: string;
+  isActive: boolean;
+  ingredients: { ingredientId: string; quantity: number }[];
+}
+
+export type UpdateDishPayload = Partial<CreateDishPayload>;
+
 export interface AuthContextValue {
   user: SafeUser | null;
   token: string | null;

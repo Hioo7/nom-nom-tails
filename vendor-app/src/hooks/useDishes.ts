@@ -1,33 +1,33 @@
 import { useCallback, useEffect, useState } from 'react';
-import { UserService } from '../services/user.service';
-import type { SafeUser } from '../types';
+import { DishService } from '../services/dish.service';
+import type { Dish } from '../types';
 import { useAuth } from './useAuth';
 
-const userService = new UserService();
+const dishService = new DishService();
 
-interface UseUsersReturn {
-  users: SafeUser[];
+interface UseDishesReturn {
+  dishes: Dish[];
   isLoading: boolean;
   error: string;
   refetch: () => void;
 }
 
-export function useUsers(): UseUsersReturn {
+export function useDishes(): UseDishesReturn {
   const { token } = useAuth();
-  const [users, setUsers] = useState<SafeUser[]>([]);
+  const [dishes, setDishes] = useState<Dish[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [trigger, setTrigger] = useState(0);
 
   useEffect(() => {
     if (!token) return;
-    userService
-      .listUsers(token)
+    dishService
+      .listDishes(token)
       .then((data) => {
-        setUsers(data);
+        setDishes(data);
         setError('');
       })
-      .catch(() => setError('Failed to load staff members.'))
+      .catch(() => setError('Failed to load dishes.'))
       .finally(() => setIsLoading(false));
   }, [token, trigger]);
 
@@ -37,5 +37,5 @@ export function useUsers(): UseUsersReturn {
     setTrigger((t) => t + 1);
   }, []);
 
-  return { users, isLoading, error, refetch };
+  return { dishes, isLoading, error, refetch };
 }

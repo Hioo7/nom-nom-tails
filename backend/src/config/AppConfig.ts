@@ -13,6 +13,12 @@ class AppConfig {
   readonly superAdminPassword: string;
   readonly superAdminName: string;
   readonly corsOrigins: string[];
+  readonly minioEndpoint: string;
+  readonly minioPort: number;
+  readonly minioUseSsl: boolean;
+  readonly minioAccessKey: string;
+  readonly minioSecretKey: string;
+  readonly imageBaseUrl: string;
 
   private constructor() {
     this.databaseUrl = this.require('DATABASE_URL');
@@ -26,6 +32,12 @@ class AppConfig {
       .filter(Boolean);
     this.port = parseInt(process.env['PORT'] ?? String(DEFAULT_PORT), 10);
     this.nodeEnv = this.parseNodeEnv(process.env['NODE_ENV']);
+    this.minioEndpoint = this.require('MINIO_ENDPOINT');
+    this.minioPort = parseInt(this.require('MINIO_PORT'), 10);
+    this.minioUseSsl = this.parseBoolean('MINIO_USE_SSL', false);
+    this.minioAccessKey = this.require('MINIO_ACCESS_KEY');
+    this.minioSecretKey = this.require('MINIO_SECRET_KEY');
+    this.imageBaseUrl = this.require('IMAGE_BASE_URL');
   }
 
   static getInstance(): AppConfig {
@@ -37,6 +49,12 @@ class AppConfig {
 
   get isDevelopment(): boolean {
     return this.nodeEnv === 'development';
+  }
+
+  private parseBoolean(key: string, defaultValue: boolean): boolean {
+    const val = process.env[key];
+    if (val === undefined) return defaultValue;
+    return val.toLowerCase() === 'true';
   }
 
   private require(key: string): string {
