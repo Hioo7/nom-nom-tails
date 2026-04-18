@@ -1,0 +1,254 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  CUSTOMER
+  DELIVERY_PARTNER
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  READY_FOR_DELIVERY
+  IN_DELIVERY
+  DELIVERED
+  CANCELLED
+}
+
+enum SettlementStatus {
+  UNSETTLED
+  PARTIAL
+  SETTLED
+}
+
+enum PaymentMethod {
+  CASH
+  ONLINE
+  UPI
+}
+
+enum DeliveryStatus {
+  AVAILABLE
+  ASSIGNED
+  PICKED_UP
+  DELIVERED
+  FAILED
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+// ─── User ─────────────────────────────────────────────────────────────────────
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  password      String
+  name          String
+  role          Role           @default(CUSTOMER)
+  isActive      Boolean        @default(true)
+  isLoyalty     Boolean        @default(false)
+  orders        Order[]
+  subscriptions Subscription[]
+  deliveryTasks DeliveryTask[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+// ─── Ingredient ───────────────────────────────────────────────────────────────
+
+model Ingredient {
+  id           String           @id @default(cuid())
+  name         String
+  unit         String
+  availableQty Float            @default(0)
+  dishes       DishIngredient[]
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+}
+
+// ─── Dish ─────────────────────────────────────────────────────────────────────
+
+model Dish {
+  id             String           @id @default(cuid())
+  name           String
+  imageUrl       String
+  description    String
+  price          Int
+  isActive       Boolean          @default(true)
+  ingredients    DishIngredient[]
+  orderItems     OrderItem[]
+  mealPlanDishes MealPlanDish[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+}
+
+model DishIngredient {
+  id           String     @id @default(cuid())
+  dish         Dish       @relation(fields: [dishId], references: [id])
+  dishId       String
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
+  ingredientId String
+  quantity     Float
+
+  @@unique([dishId, ingredientId])
+}
+
+// ─── MealPlan ─────────────────────────────────────────────────────────────────
+
+model MealPlan {
+  id            String         @id @default(cuid())
+  name          String
+  description   String
+  imageUrl      String
+  price         Int
+  isActive      Boolean        @default(true)
+  dishes        MealPlanDish[]
+  subscriptions Subscription[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model MealPlanDish {
+  id         String   @id @default(cuid())
+  mealPlan   MealPlan @relation(fields: [mealPlanId], references: [id])
+  mealPlanId String
+  dish       Dish     @relation(fields: [dishId], references: [id])
+  dishId     String
+
+  @@unique([mealPlanId, dishId])
+}
+
+// ─── Subscription ─────────────────────────────────────────────────────────────
+
+model Subscription {
+  id          String             @id @default(cuid())
+  customer    User               @relation(fields: [customerId], references: [id])
+  customerId  String
+  mealPlan    MealPlan           @relation(fields: [mealPlanId], references: [id])
+  mealPlanId  String
+  timeSlot    TimeSlot           @relation(fields: [timeSlotId], references: [id])
+  timeSlotId  String
+  startDate   DateTime
+  endDate     DateTime
+  isAutoRenew Boolean            @default(false)
+  status      SubscriptionStatus @default(ACTIVE)
+  orders      Order[]
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+}
+
+// ─── TimeSlot ─────────────────────────────────────────────────────────────────
+
+model TimeSlot {
+  id            String         @id @default(cuid())
+  day           DayOfWeek
+  startTime     String
+  endTime       String
+  isActive      Boolean        @default(true)
+  orders        Order[]
+  subscriptions Subscription[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+// ─── Order ────────────────────────────────────────────────────────────────────
+
+model Order {
+  id             String        @id @default(cuid())
+  customer       User          @relation(fields: [customerId], references: [id])
+  customerId     String
+  timeSlot       TimeSlot      @relation(fields: [timeSlotId], references: [id])
+  timeSlotId     String
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
+  subscriptionId String?
+  deliveryDate   DateTime
+  lat            Float
+  lng            Float
+  status         OrderStatus   @default(PENDING)
+  items          OrderItem[]
+  settlement     Settlement?
+  deliveryTask   DeliveryTask?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+model OrderItem {
+  id       String @id @default(cuid())
+  order    Order  @relation(fields: [orderId], references: [id])
+  orderId  String
+  dish     Dish   @relation(fields: [dishId], references: [id])
+  dishId   String
+  quantity Int
+}
+
+// ─── Settlement ───────────────────────────────────────────────────────────────
+
+model Settlement {
+  id          String           @id @default(cuid())
+  order       Order            @relation(fields: [orderId], references: [id])
+  orderId     String           @unique
+  totalAmount Int
+  paidAmount  Int              @default(0)
+  status      SettlementStatus @default(UNSETTLED)
+  payments    Payment[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+model Payment {
+  id           String        @id @default(cuid())
+  settlement   Settlement    @relation(fields: [settlementId], references: [id])
+  settlementId String
+  amount       Int
+  method       PaymentMethod
+  paidAt       DateTime      @default(now())
+  note         String?
+}
+
+// ─── DeliveryTask ─────────────────────────────────────────────────────────────
+
+model DeliveryTask {
+  id                String          @id @default(cuid())
+  order             Order           @relation(fields: [orderId], references: [id])
+  orderId           String          @unique
+  deliveryPartner   User?           @relation(fields: [deliveryPartnerId], references: [id])
+  deliveryPartnerId String?
+  status            DeliveryStatus  @default(AVAILABLE)
+  capturedAt        DateTime?
+  photos            DeliveryPhoto[]
+  failureReason     String?
+  completedAt       DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+}
+
+model DeliveryPhoto {
+  id             String       @id @default(cuid())
+  deliveryTask   DeliveryTask @relation(fields: [deliveryTaskId], references: [id])
+  deliveryTaskId String
+  photoUrl       String
+  uploadedAt     DateTime     @default(now())
+}

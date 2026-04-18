@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+@plugin "daisyui" {
+  themes: light --default, dark --prefersdark, bumblebee;
+}
+
+/* ── Focus glow overrides (global) ─────────────────────────────────── */
+/* Soft oklab glow replaces hard browser/DaisyUI outline on all inputs  */
+
+.input:focus,
+.input:focus-within,
+.select:focus,
+.textarea:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in oklab, oklch(var(--p)) 30%, transparent);
+}
+
+.input-error:focus,
+.input-error:focus-within {
+  box-shadow: 0 0 0 3px color-mix(in oklab, oklch(var(--er)) 30%, transparent);
+}
+
+.input-success:focus,
+.input-success:focus-within {
+  box-shadow: 0 0 0 3px color-mix(in oklab, oklch(var(--su)) 30%, transparent);
+}
+
+.input-warning:focus,
+.input-warning:focus-within {
+  box-shadow: 0 0 0 3px color-mix(in oklab, oklch(var(--wa)) 30%, transparent);
+}
+
+.input-neutral:focus,
+.input-neutral:focus-within {
+  box-shadow: 0 0 0 3px color-mix(in oklab, oklch(var(--n)) 30%, transparent);
+}
