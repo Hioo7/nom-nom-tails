@@ -7,7 +7,7 @@ export default function ProductsTab() {
   const [activeSection, setActiveSection] = useState<ProductSection>('dishes');
 
   return (
-    <div>
+    <div className="flex flex-col">
       <ProductPills activeSection={activeSection} onSectionChange={setActiveSection} />
       {activeSection === 'dishes' ? <DishesTab /> : <MealPlanTab />}
     </div>

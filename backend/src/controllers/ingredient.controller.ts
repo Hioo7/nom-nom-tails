@@ -1,14 +1,24 @@
 import { Request, Response, NextFunction } from 'express';
-import prisma from '../lib/prisma';
-import { CreateIngredientSchema } from '../schema/ingredient.schema';
-import AppError from '../lib/AppError';
+import IngredientService from '../services/ingredient.service';
+import {
+  parseAdjustIngredientStockBody,
+  parseCreateIngredientBody,
+  parseUpdateIngredientBody,
+} from '../validators/ingredient.validator';
 
-export async function listIngredients(_req: Request, res: Response): Promise<void> {
-  const ingredients = await prisma.ingredient.findMany({
-    select: { id: true, name: true, unit: true, availableQty: true },
-    orderBy: { name: 'asc' },
-  });
-  res.json({ data: ingredients });
+const ingredientService = IngredientService.getInstance();
+
+export async function listIngredients(
+  _req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const ingredients = await ingredientService.listIngredients();
+    res.status(200).json({ data: ingredients });
+  } catch (err) {
+    next(err);
+  }
 }
 
 export async function createIngredient(
@@ -17,16 +27,51 @@ export async function createIngredient(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const parsed = CreateIngredientSchema.safeParse(req.body);
-    if (!parsed.success) {
-      throw new AppError(422, parsed.error.issues.map((i) => i.message).join(', '));
-    }
-    const { name, unit, availableQty } = parsed.data;
-    const ingredient = await prisma.ingredient.create({
-      data: { name, unit, availableQty },
-      select: { id: true, name: true, unit: true, availableQty: true },
-    });
+    const input = parseCreateIngredientBody(req.body as object);
+    const ingredient = await ingredientService.createIngredient(input);
     res.status(201).json({ data: ingredient });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function updateIngredient(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const input = parseUpdateIngredientBody(req.body as object);
+    const ingredient = await ingredientService.updateIngredient(req.params['id'] as string, input);
+    res.status(200).json({ data: ingredient });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function increaseIngredientStock(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const input = parseAdjustIngredientStockBody(req.body as object);
+    const ingredient = await ingredientService.increaseStock(req.params['id'] as string, input);
+    res.status(200).json({ data: ingredient });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function decreaseIngredientStock(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const input = parseAdjustIngredientStockBody(req.body as object);
+    const ingredient = await ingredientService.decreaseStock(req.params['id'] as string, input);
+    res.status(200).json({ data: ingredient });
   } catch (err) {
     next(err);
   }

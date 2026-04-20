@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { FiAlertTriangle } from 'react-icons/fi';
-import type { ApiError, Dish } from '../../../types';
+import type { Dish } from '../../../types';
+import { getErrorMessage } from './orderFormatters';
 
 interface DeleteDishModalProps {
   dish: Dish;
@@ -24,47 +25,55 @@ export default function DeleteDishModal({ dish, onConfirm, onClose }: DeleteDish
       await onConfirm();
       onClose();
     } catch (err) {
-      const apiErr = err as ApiError;
-      setErrorMessage(apiErr?.message ?? 'Failed to delete dish.');
+      setErrorMessage(getErrorMessage(err, 'Failed to delete dish.'));
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <dialog ref={dialogRef} className="modal" onClose={onClose}>
-      <div className="modal-box max-w-sm">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="bg-error/10 p-2 rounded-full">
-            <FiAlertTriangle size={20} className="text-error" />
+    <dialog ref={dialogRef} className="modal modal-bottom sm:modal-middle" onClose={onClose}>
+      <div className="modal-box w-full sm:max-w-md flex flex-col max-h-[85dvh] p-0 gap-0 overflow-hidden">
+        <div className="shrink-0 border-b border-base-200 px-4 pt-4 pb-3">
+          <div className="flex items-center gap-3">
+            <div className="rounded-xl bg-error/10 p-2.5 text-error">
+              <FiAlertTriangle size={18} />
+            </div>
+            <div>
+              <h3 className="font-bold text-base text-base-content">Delete Dish</h3>
+              <p className="text-sm text-base-content/60">
+                Remove this dish from your catalog. This action cannot be undone.
+              </p>
+            </div>
           </div>
-          <h3 className="font-bold text-lg">Delete Dish</h3>
         </div>
 
-        <p className="text-sm text-base-content/70 mb-3">
-          Are you sure you want to delete this dish? This action cannot be undone.
-        </p>
+        <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 flex flex-col gap-4">
+          <p className="text-sm text-base-content/70">
+            Do you want to delete the dish <span className="font-semibold text-base-content">{dish.name}</span>?
+          </p>
 
-        <div className="bg-error/10 rounded-box p-3">
-          <p className="font-semibold text-base-content">{dish.name}</p>
-          {dish.description && (
-            <p className="text-sm text-base-content/60 truncate">{dish.description}</p>
-          )}
-        </div>
+          {errorMessage ? (
+            <div className="alert alert-error text-sm">
+              <span>{errorMessage}</span>
+            </div>
+          ) : null}
 
-        {errorMessage && (
-          <div className="alert alert-error text-sm mt-3 py-2">
-            <span>{errorMessage}</span>
+          <div className="pt-2 flex gap-2">
+            <button type="button" className="btn btn-ghost flex-1" onClick={onClose} disabled={isSubmitting}>
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="btn btn-error flex-1"
+              onClick={() => {
+                void handleConfirm();
+              }}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? <span className="loading loading-spinner loading-xs" /> : 'Delete'}
+            </button>
           </div>
-        )}
-
-        <div className="modal-action">
-          <button className="btn btn-ghost" onClick={onClose} disabled={isSubmitting}>
-            Cancel
-          </button>
-          <button className="btn btn-error" onClick={handleConfirm} disabled={isSubmitting}>
-            {isSubmitting ? <span className="loading loading-spinner loading-sm" /> : 'Delete'}
-          </button>
         </div>
       </div>
       <form method="dialog" className="modal-backdrop">

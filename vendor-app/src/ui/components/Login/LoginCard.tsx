@@ -7,6 +7,8 @@ import LoginForm from './LoginForm';
 // Only roles with a real dashboard get auto-redirected
 const REAL_DASHBOARDS: Partial<Record<string, string>> = {
   SUPER_ADMIN: '/super-admin',
+  ADMIN: '/admin',
+  DELIVERY_PARTNER: '/delivery',
 };
 
 export default function LoginCard() {

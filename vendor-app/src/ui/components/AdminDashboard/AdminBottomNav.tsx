@@ -1,6 +1,6 @@
-import { FiClipboard, FiShoppingBag, FiUser } from 'react-icons/fi';
+import { FiClipboard, FiShoppingBag, FiTruck, FiUser } from 'react-icons/fi';
 
-type Tab = 'products' | 'orders' | 'profile';
+type Tab = 'products' | 'orders' | 'deliveries' | 'profile';
 
 interface AdminBottomNavProps {
   activeTab: Tab;
@@ -47,6 +47,12 @@ export default function AdminBottomNav({ activeTab, onTabChange }: AdminBottomNa
         label="Orders"
         active={activeTab === 'orders'}
         onClick={() => onTabChange('orders')}
+      />
+      <NavItem
+        icon={<FiTruck size={22} />}
+        label="Deliveries"
+        active={activeTab === 'deliveries'}
+        onClick={() => onTabChange('deliveries')}
       />
       <NavItem
         icon={<FiUser size={22} />}

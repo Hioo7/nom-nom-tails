@@ -54,25 +54,27 @@ export default function CreateEditDishModal({
 
   return (
     <>
-      <dialog ref={dialogRef} className="modal" onClose={onClose}>
-        <div className="modal-box w-full max-w-lg flex flex-col max-h-[90vh]">
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <h3 className="font-bold text-base">
-              {mode === 'create' ? 'Create Dish' : 'Edit Dish'}
-            </h3>
-            <button
-              type="button"
-              className="btn btn-ghost btn-sm btn-square"
-              onClick={onClose}
-              disabled={form.isSubmitting}
-              aria-label="Close"
-            >
-              ✕
-            </button>
+      <dialog ref={dialogRef} className="modal modal-bottom sm:modal-middle" onClose={onClose}>
+        <div className="modal-box w-full sm:max-w-2xl flex flex-col max-h-[92dvh] p-0 gap-0 overflow-hidden">
+          <div className="shrink-0 border-b border-base-200 px-4 pt-4 pb-3">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="font-bold text-base text-base-content">
+                  {mode === 'create' ? 'Create Dish' : 'Edit Dish'}
+                </h3>
+                <p className="text-sm text-base-content/60">
+                  Build a dish in three simple steps with a mobile-friendly workflow.
+                </p>
+              </div>
+              <span className="badge badge-neutral badge-sm shrink-0">
+                {mode === 'create' ? 'New' : 'Editing'}
+              </span>
+            </div>
           </div>
 
-          <DishFormProgress step={form.step} />
+          <div className="shrink-0 px-4 pt-4 pb-3">
+            <DishFormProgress step={form.step} />
+          </div>
 
           <input
             ref={fileInputRef}
@@ -83,46 +85,48 @@ export default function CreateEditDishModal({
             disabled={form.isSubmitting}
           />
 
-          <div className="overflow-y-auto flex-1 min-h-0 flex flex-col gap-3 pb-1">
-            {form.step === 1 && (
-              <DishFormStep1
-                name={form.name}
-                onNameChange={form.setName}
-                description={form.description}
-                onDescriptionChange={form.setDescription}
-                price={form.price}
-                onPriceChange={form.setPrice}
-                imagePreview={form.imagePreview}
-                onImageClick={handleImageClick}
-                fieldErrors={form.fieldErrors}
-                disabled={form.isSubmitting}
-              />
-            )}
+          <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4">
+            <div className="rounded-box border border-base-200 bg-base-100 p-4 sm:p-5">
+              {form.step === 1 && (
+                <DishFormStep1
+                  name={form.name}
+                  onNameChange={form.setName}
+                  description={form.description}
+                  onDescriptionChange={form.setDescription}
+                  price={form.price}
+                  onPriceChange={form.setPrice}
+                  imagePreview={form.imagePreview}
+                  onImageClick={handleImageClick}
+                  fieldErrors={form.fieldErrors}
+                  disabled={form.isSubmitting}
+                />
+              )}
 
-            {form.step === 2 && (
-              <DishFormStep2
-                ingredients={form.ingredients}
-                availableIngredients={availableIngredients}
-                onAdd={form.addIngredient}
-                onUpdate={form.updateIngredient}
-                onRemove={form.removeIngredient}
-                onCreateIngredient={() => setShowCreateIngredient(true)}
-                disabled={form.isSubmitting}
-              />
-            )}
+              {form.step === 2 && (
+                <DishFormStep2
+                  ingredients={form.ingredients}
+                  availableIngredients={availableIngredients}
+                  onAdd={form.addIngredient}
+                  onUpdate={form.updateIngredient}
+                  onRemove={form.removeIngredient}
+                  onCreateIngredient={() => setShowCreateIngredient(true)}
+                  disabled={form.isSubmitting}
+                />
+              )}
 
-            {form.step === 3 && (
-              <DishFormStep3
-                name={form.name}
-                price={form.price}
-                imagePreview={form.imagePreview}
-                ingredientCount={form.ingredients.length}
-                isActive={form.isActive}
-                onIsActiveChange={form.setIsActive}
-                errorMessage={form.errorMessage}
-                disabled={form.isSubmitting}
-              />
-            )}
+              {form.step === 3 && (
+                <DishFormStep3
+                  name={form.name}
+                  price={form.price}
+                  imagePreview={form.imagePreview}
+                  ingredientCount={form.ingredients.length}
+                  isActive={form.isActive}
+                  onIsActiveChange={form.setIsActive}
+                  errorMessage={form.errorMessage}
+                  disabled={form.isSubmitting}
+                />
+              )}
+            </div>
           </div>
 
           <DishFormNav
@@ -130,6 +134,7 @@ export default function CreateEditDishModal({
             canGoNext={form.canGoNext}
             isSubmitting={form.isSubmitting}
             mode={mode}
+            onClose={onClose}
             onBack={form.goBack}
             onNext={form.goNext}
             onSubmit={form.handleSubmit}

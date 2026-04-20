@@ -45,30 +45,28 @@ export default function DishesTab() {
   };
 
   return (
-    <div>
+    <div className="p-4 flex flex-col gap-4">
       <DishesHeader count={dishes.length} onAddDish={openCreate} />
 
-      <div className="p-4">
-        {isLoading ? (
-          <div className="flex justify-center py-16">
-            <span className="loading loading-dots loading-lg text-primary" />
-          </div>
-        ) : error ? (
-          <div className="alert alert-error">
-            <span>{error}</span>
-            <button className="btn btn-ghost btn-sm" onClick={refetch}>
-              Retry
-            </button>
-          </div>
-        ) : (
-          <DishGrid
-            dishes={dishes}
-            onEdit={openEdit}
-            onDelete={openDelete}
-            onAddFirst={openCreate}
-          />
-        )}
-      </div>
+      {isLoading ? (
+        <div className="flex justify-center py-16">
+          <span className="loading loading-dots loading-lg text-primary" />
+        </div>
+      ) : error ? (
+        <div className="alert alert-error">
+          <span>{error}</span>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={refetch}>
+            Retry
+          </button>
+        </div>
+      ) : (
+        <DishGrid
+          dishes={dishes}
+          onEdit={openEdit}
+          onDelete={openDelete}
+          onAddFirst={openCreate}
+        />
+      )}
 
       {(activeModal === 'create' || activeModal === 'edit') && (
         <CreateEditDishModal

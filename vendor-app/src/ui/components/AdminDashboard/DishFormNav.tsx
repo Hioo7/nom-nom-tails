@@ -1,4 +1,4 @@
-import { FiArrowLeft, FiArrowRight, FiCheck, FiSave } from 'react-icons/fi';
+import { FiArrowLeft, FiArrowRight, FiCheck, FiSave, FiX } from 'react-icons/fi';
 import type { DishFormStep } from '../../../hooks/useDishForm';
 
 interface DishFormNavProps {
@@ -6,6 +6,7 @@ interface DishFormNavProps {
   canGoNext: boolean;
   isSubmitting: boolean;
   mode: 'create' | 'edit';
+  onClose: () => void;
   onBack: () => void;
   onNext: () => void;
   onSubmit: () => Promise<void>;
@@ -16,56 +17,60 @@ export default function DishFormNav({
   canGoNext,
   isSubmitting,
   mode,
+  onClose,
   onBack,
   onNext,
   onSubmit,
 }: DishFormNavProps) {
   const isLastStep = step === 3;
+  const isFirstStep = step === 1;
 
   return (
-    <div className="flex justify-between items-center pt-3 mt-2 border-t border-base-200">
-      <button
-        type="button"
-        className="btn btn-ghost btn-sm gap-1.5"
-        onClick={onBack}
-        disabled={step === 1 || isSubmitting}
-      >
-        <FiArrowLeft size={14} />
-        Back
-      </button>
-
-      {isLastStep ? (
+    <div className="shrink-0 border-t border-base-200 bg-base-100 px-4 py-3">
+      <div className="flex items-center gap-3">
         <button
           type="button"
-          className="btn btn-neutral btn-sm gap-1.5"
-          onClick={onSubmit}
+          className="btn btn-ghost btn-md min-w-[96px] gap-1.5"
+          onClick={isFirstStep ? onClose : onBack}
           disabled={isSubmitting}
         >
-          {isSubmitting ? (
-            <span className="loading loading-spinner loading-xs" />
-          ) : mode === 'create' ? (
-            <>
-              <FiCheck size={14} />
-              Create Dish
-            </>
-          ) : (
-            <>
-              <FiSave size={14} />
-              Save Changes
-            </>
-          )}
+          {isFirstStep ? <FiX size={16} /> : <FiArrowLeft size={16} />}
+          {isFirstStep ? 'Close' : 'Back'}
         </button>
-      ) : (
-        <button
-          type="button"
-          className="btn btn-neutral btn-sm gap-1.5"
-          onClick={onNext}
-          disabled={!canGoNext}
-        >
-          Next
-          <FiArrowRight size={14} />
-        </button>
-      )}
+
+        {isLastStep ? (
+          <button
+            type="button"
+            className="btn btn-neutral btn-md flex-1 gap-2"
+            onClick={onSubmit}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <span className="loading loading-spinner loading-sm" />
+            ) : mode === 'create' ? (
+              <>
+                <FiCheck size={16} />
+                Create Dish
+              </>
+            ) : (
+              <>
+                <FiSave size={16} />
+                Save Changes
+              </>
+            )}
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="btn btn-neutral btn-md flex-1 gap-2"
+            onClick={onNext}
+            disabled={!canGoNext}
+          >
+            Next
+            <FiArrowRight size={16} />
+          </button>
+        )}
+      </div>
     </div>
   );
 }

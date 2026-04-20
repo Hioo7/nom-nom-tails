@@ -8,6 +8,7 @@ import PasswordField from './PasswordField';
 const REAL_DASHBOARDS: Partial<Record<string, string>> = {
   SUPER_ADMIN: '/super-admin',
   ADMIN: '/admin',
+  DELIVERY_PARTNER: '/delivery',
 };
 
 export default function LoginForm() {

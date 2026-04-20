@@ -7,14 +7,19 @@ interface DishesHeaderProps {
 
 export default function DishesHeader({ count, onAddDish }: DishesHeaderProps) {
   return (
-    <div className="flex items-center justify-between px-4 py-3">
-      <div className="flex items-center gap-2">
-        <h2 className="text-lg font-bold text-base-content">Dishes</h2>
-        <span className="badge badge-sm">{count}</span>
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <h2 className="text-lg font-bold text-base-content">Dishes</h2>
+          <span className="badge badge-neutral badge-sm">{count} total</span>
+        </div>
+        <p className="text-sm text-base-content/60">
+          Curate individual dishes with clearer storefront status and quick actions.
+        </p>
       </div>
-      <button className="btn btn-primary btn-sm gap-1" onClick={onAddDish}>
-        <FiPlus size={14} />
-        Add Dish
+      <button type="button" className="btn btn-sm btn-neutral sm:self-center" onClick={onAddDish}>
+        <FiPlus size={16} />
+        New dish
       </button>
     </div>
   );

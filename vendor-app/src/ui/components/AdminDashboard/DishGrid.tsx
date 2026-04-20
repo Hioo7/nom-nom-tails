@@ -11,19 +11,25 @@ interface DishGridProps {
 export default function DishGrid({ dishes, onEdit, onDelete, onAddFirst }: DishGridProps) {
   if (dishes.length === 0) {
     return (
-      <div className="flex flex-col items-center gap-3 py-16 text-base-content/40">
-        <span className="text-5xl">🍽️</span>
-        <p className="text-sm font-medium">No dishes yet</p>
-        <p className="text-xs">Add your first dish to get started.</p>
-        <button className="btn btn-primary btn-sm mt-2" onClick={onAddFirst}>
-          Add your first dish
-        </button>
+      <div className="card bg-base-200 shadow-sm">
+        <div className="card-body items-center gap-3 py-12 text-center">
+          <span className="text-5xl text-base-content/20">🍽️</span>
+          <div>
+            <h3 className="font-semibold text-base-content/70">No dishes yet</h3>
+            <p className="mt-1 text-sm text-base-content/50">
+              Add your first dish to start building the storefront.
+            </p>
+          </div>
+          <button type="button" className="btn btn-neutral btn-sm mt-1" onClick={onAddFirst}>
+            Create first dish
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
       {dishes.map((dish) => (
         <DishCard
           key={dish.id}

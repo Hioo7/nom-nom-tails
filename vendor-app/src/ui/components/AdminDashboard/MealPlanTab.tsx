@@ -1,19 +1,106 @@
-import { FiCalendar } from 'react-icons/fi';
+import { useState } from 'react';
+import { useMealPlanActions } from '../../../hooks/useMealPlanActions';
+import { useMealPlans } from '../../../hooks/useMealPlans';
+import type { CreateMealPlanPayload, MealPlan } from '../../../types';
+import CreateEditMealPlanModal from './CreateEditMealPlanModal';
+import DeleteMealPlanModal from './DeleteMealPlanModal';
+import MealPlanDishesModal from './MealPlanDishesModal';
+import MealPlanGrid from './MealPlanGrid';
+import MealPlanHeader from './MealPlanHeader';
+
+type ModalMode = 'create' | 'edit' | 'delete' | 'view' | null;
 
 export default function MealPlanTab() {
+  const { mealPlans, isLoading, error, refetch } = useMealPlans();
+  const { createMealPlan, updateMealPlan, deleteMealPlan } = useMealPlanActions(refetch);
+
+  const [selectedPlan, setSelectedPlan] = useState<MealPlan | null>(null);
+  const [activeModal, setActiveModal] = useState<ModalMode>(null);
+
+  const openCreate = () => {
+    setSelectedPlan(null);
+    setActiveModal('create');
+  };
+
+  const openView = (plan: MealPlan) => {
+    setSelectedPlan(plan);
+    setActiveModal('view');
+  };
+
+  const openEdit = (plan: MealPlan) => {
+    setSelectedPlan(plan);
+    setActiveModal('edit');
+  };
+
+  const openDelete = (plan: MealPlan) => {
+    setSelectedPlan(plan);
+    setActiveModal('delete');
+  };
+
+  const closeModal = () => {
+    setActiveModal(null);
+    setSelectedPlan(null);
+  };
+
+  const handleSave = async (
+    payload: CreateMealPlanPayload,
+    imageFile?: File,
+  ): Promise<void> => {
+    if (activeModal === 'create') {
+      await createMealPlan(payload, imageFile);
+    } else if (activeModal === 'edit' && selectedPlan) {
+      await updateMealPlan(selectedPlan.id, payload, imageFile);
+    }
+  };
+
   return (
-    <div className="flex flex-1 items-center justify-center min-h-[calc(100vh-8rem)] px-4">
-      <div className="card bg-base-200 shadow-sm w-full max-w-sm">
-        <div className="card-body items-center text-center gap-4">
-          <FiCalendar className="text-base-content/20" size={72} />
-          <div className="flex flex-col gap-1">
-            <h2 className="card-title justify-center text-base-content/60">Meal Plan</h2>
-            <p className="text-sm text-base-content/40">
-              Coming soon — create and manage meal plans here.
-            </p>
-          </div>
+    <div className="p-4 flex flex-col gap-4">
+      <MealPlanHeader count={mealPlans.length} onAddMealPlan={openCreate} />
+
+      {isLoading ? (
+        <div className="flex justify-center py-16">
+          <span className="loading loading-dots loading-lg text-primary" />
         </div>
-      </div>
+      ) : error ? (
+        <div className="alert alert-error">
+          <span>{error}</span>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={refetch}>
+            Retry
+          </button>
+        </div>
+      ) : (
+        <MealPlanGrid
+          mealPlans={mealPlans}
+          onView={openView}
+          onEdit={openEdit}
+          onDelete={openDelete}
+          onAddFirst={openCreate}
+        />
+      )}
+
+      {(activeModal === 'create' || activeModal === 'edit') && (
+        <CreateEditMealPlanModal
+          mode={activeModal}
+          mealPlan={selectedPlan ?? undefined}
+          onClose={closeModal}
+          onSaved={handleSave}
+        />
+      )}
+
+      {activeModal === 'view' && selectedPlan && (
+        <MealPlanDishesModal
+          mealPlan={selectedPlan}
+          onClose={closeModal}
+        />
+      )}
+
+      {activeModal === 'delete' && selectedPlan && (
+        <DeleteMealPlanModal
+          mealPlan={selectedPlan}
+          onConfirm={() => deleteMealPlan(selectedPlan.id)}
+          onClose={closeModal}
+        />
+      )}
     </div>
   );
 }
