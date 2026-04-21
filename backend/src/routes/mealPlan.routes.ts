@@ -28,7 +28,7 @@ const upload = multer({
   },
 });
 
-router.get('/', ...guard, listMealPlans);
+router.get('/', listMealPlans);
 router.post('/', ...guard, createMealPlan);
 router.get('/:id', ...guard, getMealPlan);
 router.patch('/:id', ...guard, updateMealPlan);

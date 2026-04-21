@@ -30,7 +30,7 @@ export function MealPlanCard({ plan, onSubscribe }: Props) {
                 key={d.id}
                 className="text-xs bg-orange-50 text-orange-600 px-2 py-0.5 rounded-full border border-orange-100"
               >
-                {d.dish.name}
+                {d.name}
               </span>
             ))}
             {plan.dishes.length > 4 && (

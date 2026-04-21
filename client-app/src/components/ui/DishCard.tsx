@@ -1,11 +1,16 @@
-import { FiPlus, FiMinus } from 'react-icons/fi';
+import { FiPlus } from 'react-icons/fi';
 import type { Dish } from '../../types';
 import { useCart } from '../../hooks/useCart';
+import { useToast } from '../../context/ToastContext';
 
 export function DishCard({ dish }: { dish: Dish }) {
-  const { items, addItem, updateQuantity } = useCart();
-  const cartItem = items.find((i) => i.dish.id === dish.id);
-  const qty = cartItem?.quantity ?? 0;
+  const { addItem } = useCart();
+  const { showToast } = useToast();
+
+  function handleAdd() {
+    addItem(dish);
+    showToast(dish.name);
+  }
 
   return (
     <div className="bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col">
@@ -25,30 +30,12 @@ export function DishCard({ dish }: { dish: Dish }) {
         <p className="text-gray-400 text-xs line-clamp-2">{dish.description}</p>
         <div className="flex items-center justify-between mt-auto pt-2">
           <span className="font-bold text-gray-900 text-sm">₹{dish.price}</span>
-          {qty === 0 ? (
-            <button
-              onClick={() => addItem(dish)}
-              className="flex items-center gap-1 bg-orange-500 hover:bg-orange-600 text-white text-xs font-semibold px-3 py-1.5 rounded-full transition-colors"
-            >
-              <FiPlus size={13} /> Add
-            </button>
-          ) : (
-            <div className="flex items-center gap-2 bg-orange-500 rounded-full px-2 py-1">
-              <button
-                onClick={() => updateQuantity(dish.id, qty - 1)}
-                className="text-white"
-              >
-                <FiMinus size={13} />
-              </button>
-              <span className="text-white text-xs font-bold w-4 text-center">{qty}</span>
-              <button
-                onClick={() => addItem(dish)}
-                className="text-white"
-              >
-                <FiPlus size={13} />
-              </button>
-            </div>
-          )}
+          <button
+            onClick={handleAdd}
+            className="flex items-center gap-1 bg-orange-500 hover:bg-orange-600 text-white text-xs font-semibold px-3 py-1.5 rounded-full transition-colors"
+          >
+            <FiPlus size={13} /> Add
+          </button>
         </div>
       </div>
     </div>

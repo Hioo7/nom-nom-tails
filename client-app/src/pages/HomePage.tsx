@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react';
 import { FiSearch } from 'react-icons/fi';
 import { DishCard } from '../components/ui/DishCard';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
-// import { dishService } from '../services/dish.service'; // TODO: uncomment when DB has data
-import { DUMMY_DISHES } from '../data/data';
+import { DishService } from '../services/dish.service';
 import { useAuth } from '../hooks/useAuth';
 import type { Dish } from '../types';
+
+const dishService = new DishService();
 
 export function HomePage() {
   const { user } = useAuth();
@@ -15,10 +16,11 @@ export function HomePage() {
   const [query, setQuery] = useState('');
 
   useEffect(() => {
-    // TODO: replace with API call once DB has data:
-    // dishService.list().then(setDishes).catch(() => setError('Failed to load menu. Please try again.')).finally(() => setLoading(false));
-    setDishes(DUMMY_DISHES);
-    setLoading(false);
+    dishService
+      .list()
+      .then((data) => setDishes(data.filter((d) => d.isActive)))
+      .catch(() => setError('Failed to load menu. Please try again.'))
+      .finally(() => setLoading(false));
   }, []);
 
   const filtered = dishes.filter(

@@ -60,6 +60,12 @@ enum SubscriptionStatus {
   CANCELLED
 }
 
+enum AddressType {
+  HOME
+  WORK
+  OTHER
+}
+
 // ─── User ─────────────────────────────────────────────────────────────────────
 
 model User {
@@ -73,8 +79,27 @@ model User {
   orders        Order[]
   subscriptions Subscription[]
   deliveryTasks DeliveryTask[]
+  addresses     Address[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
+}
+
+// ─── Address ──────────────────────────────────────────────────────────────────
+
+model Address {
+  id        String      @id @default(cuid())
+  user      User        @relation(fields: [userId], references: [id])
+  userId    String
+  type      AddressType @default(HOME)
+  fullName  String
+  phone     String
+  line1     String
+  line2     String?
+  city      String
+  state     String
+  pin       String
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
 }
 
 // ─── Ingredient ───────────────────────────────────────────────────────────────

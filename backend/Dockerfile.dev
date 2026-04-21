@@ -6,4 +6,4 @@ COPY prisma ./prisma
 COPY prisma.config.ts ./
 RUN DATABASE_URL=postgresql://placeholder:placeholder@localhost:5432/placeholder npx prisma generate
 EXPOSE 3000
-CMD ["npx", "tsx", "watch", "src/server.ts"]
+CMD ["sh", "-c", "npx prisma db push && npx tsx watch src/server.ts"]

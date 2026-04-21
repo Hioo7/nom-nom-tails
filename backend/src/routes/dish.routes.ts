@@ -28,7 +28,7 @@ const upload = multer({
   },
 });
 
-router.get('/', ...guard, listDishes);
+router.get('/', listDishes);
 router.post('/', ...guard, createDish);
 router.get('/:id', ...guard, getDish);
 router.patch('/:id', ...guard, updateDish);

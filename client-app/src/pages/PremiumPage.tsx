@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { FiStar } from 'react-icons/fi';
 import { MealPlanCard } from '../components/ui/MealPlanCard';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
-// import { mealPlanService } from '../services/mealPlan.service'; // TODO: uncomment when DB has data
-import { DUMMY_MEAL_PLANS } from '../data/data';
+import { MealPlanService } from '../services/mealPlan.service';
 import { useAuth } from '../hooks/useAuth';
 import type { MealPlan } from '../types';
+
+const mealPlanService = new MealPlanService();
 
 export function PremiumPage() {
   const { user } = useAuth();
@@ -16,10 +17,11 @@ export function PremiumPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    // TODO: replace with API call once DB has data:
-    // mealPlanService.list().then(setPlans).catch(() => setError('Failed to load meal plans.')).finally(() => setLoading(false));
-    setPlans(DUMMY_MEAL_PLANS);
-    setLoading(false);
+    mealPlanService
+      .list()
+      .then((data) => setPlans(data.filter((p) => p.isActive)))
+      .catch(() => setError('Failed to load meal plans.'))
+      .finally(() => setLoading(false));
   }, []);
 
   const handleSubscribe = (plan: MealPlan) => {

@@ -91,10 +91,10 @@ export function ProfilePage() {
   ];
 
   const settingsItems = [
-    { icon: <FiUser size={18} />, label: 'Edit Profile', action: () => {} },
-    { icon: <FiMapPin size={18} />, label: 'Shipping Address', action: () => {} },
-    { icon: <FiBell size={18} />, label: 'Notifications', action: () => {} },
-    { icon: <FiSettings size={18} />, label: 'Settings', action: () => {} },
+    { icon: <FiUser size={18} />, label: 'Edit Profile', action: () => navigate('/profile/edit') },
+    { icon: <FiMapPin size={18} />, label: 'Shipping Address', action: () => navigate('/profile/address') },
+    { icon: <FiBell size={18} />, label: 'Notifications', action: () => navigate('/profile/notifications') },
+    { icon: <FiSettings size={18} />, label: 'Settings', action: () => navigate('/profile/settings') },
   ];
 
   return (

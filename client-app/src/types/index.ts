@@ -24,9 +24,12 @@ export interface Dish {
 
 export interface MealPlanDishEntry {
   id: string;
-  mealPlanId: string;
   dishId: string;
-  dish: Dish;
+  name: string;
+  description: string;
+  price: number;
+  imageUrl: string | null;
+  isActive: boolean;
 }
 
 export interface MealPlan {

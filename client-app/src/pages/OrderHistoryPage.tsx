@@ -1,8 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FiArrowLeft, FiSearch, FiPackage } from 'react-icons/fi';
-import { DUMMY_ORDERS } from '../data/data';
+import { OrderService } from '../services/order.service';
+import { useAuth } from '../hooks/useAuth';
 import type { Order } from '../types';
+
+const orderService = new OrderService();
 
 type FilterKey = 'ALL' | 'PENDING' | 'CONFIRMED' | 'IN_DELIVERY' | 'DELIVERED' | 'CANCELLED';
 
@@ -94,6 +97,7 @@ function OrderCard({ order }: { order: Order }) {
 export function OrderHistoryPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { token } = useAuth();
   const initialFilter = (location.state as { filter?: string })?.filter as FilterKey | undefined;
 
   const [activeFilter, setActiveFilter] = useState<FilterKey>(
@@ -101,9 +105,21 @@ export function OrderHistoryPage() {
   );
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  // TODO: replace DUMMY_ORDERS with API call once DB has data
-  const orders: Order[] = DUMMY_ORDERS;
+  useEffect(() => {
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+    orderService
+      .listMine(token)
+      .then(setOrders)
+      .catch(() => setError('Failed to load orders.'))
+      .finally(() => setLoading(false));
+  }, [token]);
 
   const filtered = orders.filter((o) => {
     const matchesFilter = activeFilter === 'ALL' || o.status === activeFilter;
@@ -168,7 +184,22 @@ export function OrderHistoryPage() {
 
       {/* Order list */}
       <div className="max-w-lg mx-auto px-4 py-4 flex flex-col gap-3">
-        {filtered.length === 0 ? (
+        {loading ? (
+          <div className="flex justify-center py-20">
+            <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <FiPackage size={48} className="text-gray-200 mb-4" />
+            <p className="text-gray-500 font-medium">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-4 text-orange-500 font-medium text-sm"
+            >
+              Retry
+            </button>
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <FiPackage size={48} className="text-gray-200 mb-4" />
             <p className="text-gray-500 font-medium">No orders found</p>
