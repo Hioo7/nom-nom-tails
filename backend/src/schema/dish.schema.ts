@@ -1,4 +1,12 @@
 import { z } from 'zod';
+import { hasAtMostTwoDecimalPlaces } from '../lib/money';
+
+const PriceSchema = z
+  .number()
+  .positive('Price must be positive')
+  .refine(hasAtMostTwoDecimalPlaces, {
+    message: 'Price can have at most 2 decimal places',
+  });
 
 export const IngredientInputSchema = z.object({
   ingredientId: z.string().min(1, 'Ingredient is required'),
@@ -8,7 +16,7 @@ export const IngredientInputSchema = z.object({
 export const CreateDishSchema = z.object({
   name: z.string().trim().min(1, 'Dish name is required'),
   description: z.string().trim().default(''),
-  price: z.number().int('Price must be a whole number').positive('Price must be positive'),
+  price: PriceSchema,
   imageUrl: z.string().url('Invalid image URL').optional(),
   isActive: z.boolean().default(true),
   ingredients: z.array(IngredientInputSchema).min(1, 'At least one ingredient is required'),
@@ -18,11 +26,7 @@ export const UpdateDishSchema = z
   .object({
     name: z.string().trim().min(1, 'Dish name is required').optional(),
     description: z.string().trim().optional(),
-    price: z
-      .number()
-      .int('Price must be a whole number')
-      .positive('Price must be positive')
-      .optional(),
+    price: PriceSchema.optional(),
     imageUrl: z.string().url('Invalid image URL').nullable().optional(),
     isActive: z.boolean().optional(),
     ingredients: z

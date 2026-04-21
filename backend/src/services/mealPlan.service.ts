@@ -5,6 +5,7 @@ import { MINIO_BUCKET } from '../config/constants';
 import { compressToAvif } from '../lib/imageCompress';
 import MinioStorage from '../lib/minio';
 import AppError from '../lib/AppError';
+import { toPaise } from '../lib/money';
 import prisma from '../lib/prisma';
 import { CreateMealPlanInput, UpdateMealPlanInput } from '../schema/mealPlan.schema';
 import { SafeMealPlan, SafeMealPlanDish } from '../types/mealPlan.types';
@@ -75,7 +76,7 @@ class MealPlanService {
         data: {
           name: data.name,
           description: data.description,
-          price: Math.round(data.price * 100),
+          price: toPaise(data.price),
           imageUrl: data.imageUrl,
           isActive: data.isActive,
         },
@@ -100,7 +101,7 @@ class MealPlanService {
       const updateData: Prisma.MealPlanUpdateInput = {};
       if (data.name !== undefined) updateData.name = data.name;
       if (data.description !== undefined) updateData.description = data.description;
-      if (data.price !== undefined) updateData.price = Math.round(data.price * 100);
+      if (data.price !== undefined) updateData.price = toPaise(data.price);
       if (data.imageUrl !== undefined) updateData.imageUrl = data.imageUrl;
       if (data.isActive !== undefined) updateData.isActive = data.isActive;
 

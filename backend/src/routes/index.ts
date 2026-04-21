@@ -8,6 +8,7 @@ import mealPlanRouter from './mealPlan.routes';
 import orderRouter from './order.routes';
 import timeSlotRouter from './timeSlot.routes';
 import deliveryPartnerRouter from './deliveryPartner.routes';
+import customerRouter from './customer.routes';
 
 const router = Router();
 
@@ -24,5 +25,6 @@ router.use('/meal-plans', mealPlanRouter);
 router.use('/orders', orderRouter);
 router.use('/time-slots', timeSlotRouter);
 router.use('/delivery-partners', deliveryPartnerRouter);
+router.use('/customers', customerRouter);
 
 export default router;

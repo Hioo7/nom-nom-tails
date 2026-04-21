@@ -5,6 +5,7 @@ import { MINIO_BUCKET } from '../config/constants';
 import { compressToAvif } from '../lib/imageCompress';
 import MinioStorage from '../lib/minio';
 import AppError from '../lib/AppError';
+import { toPaise } from '../lib/money';
 import prisma from '../lib/prisma';
 import { CreateDishInput, IngredientInput, UpdateDishInput } from '../schema/dish.schema';
 import { SafeDish, SafeDishIngredient } from '../types/dish.types';
@@ -71,7 +72,7 @@ class DishService {
         data: {
           name: data.name,
           description: data.description,
-          price: data.price,
+          price: toPaise(data.price),
           imageUrl: data.imageUrl ?? null,
           isActive: data.isActive,
         },
@@ -92,7 +93,7 @@ class DishService {
       const updateData: Prisma.DishUpdateInput = {};
       if (data.name !== undefined) updateData.name = data.name;
       if (data.description !== undefined) updateData.description = data.description;
-      if (data.price !== undefined) updateData.price = data.price;
+      if (data.price !== undefined) updateData.price = toPaise(data.price);
       if (data.isActive !== undefined) updateData.isActive = data.isActive;
       if ('imageUrl' in data) updateData.imageUrl = data.imageUrl ?? null;
 

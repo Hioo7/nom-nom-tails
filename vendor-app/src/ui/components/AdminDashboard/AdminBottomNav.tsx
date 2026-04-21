@@ -1,6 +1,6 @@
-import { FiClipboard, FiShoppingBag, FiTruck, FiUser } from 'react-icons/fi';
+import { FiClipboard, FiShoppingBag, FiTruck, FiUser, FiUsers } from 'react-icons/fi';
 
-type Tab = 'products' | 'orders' | 'deliveries' | 'profile';
+type Tab = 'products' | 'orders' | 'customers' | 'deliveries' | 'profile';
 
 interface AdminBottomNavProps {
   activeTab: Tab;
@@ -23,7 +23,7 @@ function NavItem({ icon, label, active, onClick }: NavItemProps) {
       }`}
     >
       <span className={`transition-transform ${active ? 'scale-110' : ''}`}>{icon}</span>
-      <span className={`text-[11px] font-medium tracking-wide ${active ? 'text-primary' : ''}`}>
+      <span className={`text-[10px] font-medium tracking-wide ${active ? 'text-primary' : ''}`}>
         {label}
       </span>
       {active && (
@@ -47,6 +47,12 @@ export default function AdminBottomNav({ activeTab, onTabChange }: AdminBottomNa
         label="Orders"
         active={activeTab === 'orders'}
         onClick={() => onTabChange('orders')}
+      />
+      <NavItem
+        icon={<FiUsers size={22} />}
+        label="Customers"
+        active={activeTab === 'customers'}
+        onClick={() => onTabChange('customers')}
       />
       <NavItem
         icon={<FiTruck size={22} />}

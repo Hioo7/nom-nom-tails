@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { FiSearch, FiX, FiPlus } from 'react-icons/fi';
 import type { Dish } from '../../../types';
+import { formatCurrency } from './orderFormatters';
 
 interface MealPlanFormStep2Props {
   dishes: Dish[];
@@ -115,7 +116,7 @@ export default function MealPlanFormStep2({
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-base-content truncate">{dish.name}</p>
                   <p className="text-xs text-base-content/50">
-                    ₹{dish.price} · {dish.ingredients.length} ingredient
+                    {formatCurrency(dish.price)} · {dish.ingredients.length} ingredient
                     {dish.ingredients.length !== 1 ? 's' : ''}
                   </p>
                 </div>

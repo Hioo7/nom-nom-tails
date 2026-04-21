@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { MealPlan } from '../../../types';
 import MealPlanDishPreviewCard from './MealPlanDishPreviewCard';
+import { formatCurrency } from './orderFormatters';
 
 interface MealPlanDishesModalProps {
   mealPlan: MealPlan;
@@ -14,11 +15,6 @@ export default function MealPlanDishesModal({ mealPlan, onClose }: MealPlanDishe
     dialogRef.current?.showModal();
   }, []);
 
-  const priceDisplay = (mealPlan.price / 100).toLocaleString('en-IN', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  });
-
   return (
     <dialog ref={dialogRef} className="modal modal-bottom sm:modal-middle" onClose={onClose}>
       <div className="modal-box w-full sm:max-w-lg flex flex-col max-h-[85dvh] p-0 gap-0 overflow-hidden">
@@ -29,7 +25,9 @@ export default function MealPlanDishesModal({ mealPlan, onClose }: MealPlanDishe
             {mealPlan.name}
           </h3>
           <div className="flex items-center gap-2 mt-1 flex-wrap">
-            <span className="badge badge-xs badge-primary font-semibold">₹{priceDisplay}</span>
+            <span className="badge badge-xs badge-primary font-semibold">
+              {formatCurrency(mealPlan.price)}
+            </span>
             <span className="text-xs text-base-content/50">
               {mealPlan.dishes.length} dish{mealPlan.dishes.length !== 1 ? 'es' : ''}
             </span>

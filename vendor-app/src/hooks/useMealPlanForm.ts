@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import type { ApiError, ApiErrorField, CreateMealPlanPayload, FieldErrors, MealPlan } from '../types';
+import { priceService } from '../services/price.service';
 
 export type MealPlanFormStep = 1 | 2 | 3;
 
@@ -42,9 +43,7 @@ export function useMealPlanForm({
   const [step, setStep] = useState<MealPlanFormStep>(1);
   const [name, setName] = useState(mealPlan?.name ?? '');
   const [description, setDescription] = useState(mealPlan?.description ?? '');
-  const [price, setPrice] = useState(
-    mealPlan ? String(mealPlan.price / 100) : '',
-  );
+  const [price, setPrice] = useState(mealPlan ? priceService.formatPaiseInput(mealPlan.price) : '');
   const [imagePreview, setImagePreview] = useState<string | null>(
     mealPlan?.imageUrl || null,
   );
@@ -74,7 +73,7 @@ export function useMealPlanForm({
     );
   }, []);
 
-  const step1Valid = name.trim().length > 0 && price.trim().length > 0 && Number(price) > 0;
+  const step1Valid = name.trim().length > 0 && priceService.isValidRupeeInput(price);
   const step2Valid = selectedDishIds.length > 0;
   const canGoNext = step === 1 ? step1Valid : step === 2 ? step2Valid : false;
 
@@ -93,10 +92,18 @@ export function useMealPlanForm({
     setErrorMessage('');
     setFieldErrors({});
     try {
+      const parsedPrice = priceService.parseRupeeInput(price);
+
+      if (parsedPrice === null) {
+        setFieldErrors({ price: 'Enter a valid price in rupees with up to 2 decimals.' });
+        setErrorMessage('Please fix the highlighted fields.');
+        return;
+      }
+
       const payload: CreateMealPlanPayload = {
         name: name.trim(),
         description: description.trim(),
-        price: Number(price),
+        price: parsedPrice,
         isActive,
         dishIds: selectedDishIds,
       };

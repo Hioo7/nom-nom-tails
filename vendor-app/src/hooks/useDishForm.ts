@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import type { ApiError, ApiErrorField, CreateDishPayload, Dish, FieldErrors } from '../types';
+import { priceService } from '../services/price.service';
 
 export type DishFormStep = 1 | 2 | 3;
 
@@ -56,7 +57,7 @@ export function useDishForm({ dish, onSaved, onClose }: UseDishFormOptions): Use
 
   const [name, setName] = useState(dish?.name ?? '');
   const [description, setDescription] = useState(dish?.description ?? '');
-  const [price, setPrice] = useState(dish ? String(dish.price) : '');
+  const [price, setPrice] = useState(dish ? priceService.formatPaiseInput(dish.price) : '');
   const [imagePreview, setImagePreview] = useState<string | null>(dish?.imageUrl ?? null);
   const [imageFile, setImageFile] = useState<File | undefined>(undefined);
   const [ingredients, setIngredients] = useState<IngredientRowData[]>(buildInitialIngredients(dish));
@@ -88,7 +89,7 @@ export function useDishForm({ dish, onSaved, onClose }: UseDishFormOptions): Use
     setIngredients((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
-  const step1Valid = name.trim().length > 0 && price.trim().length > 0 && Number(price) > 0;
+  const step1Valid = name.trim().length > 0 && priceService.isValidRupeeInput(price);
 
   const step2Valid =
     ingredients.length > 0 &&
@@ -113,10 +114,18 @@ export function useDishForm({ dish, onSaved, onClose }: UseDishFormOptions): Use
     setErrorMessage('');
     setFieldErrors({});
     try {
+      const parsedPrice = priceService.parseRupeeInput(price);
+
+      if (parsedPrice === null) {
+        setFieldErrors({ price: 'Enter a valid price in rupees with up to 2 decimals.' });
+        setErrorMessage('Please fix the highlighted fields.');
+        return;
+      }
+
       const payload: CreateDishPayload = {
         name: name.trim(),
         description: description.trim(),
-        price: Number(price),
+        price: parsedPrice,
         isActive,
         ingredients: ingredients.map((ing) => ({
           ingredientId: ing.ingredientId,

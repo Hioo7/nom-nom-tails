@@ -113,10 +113,10 @@ export default function DishFormStep1({
         >
           <span className="text-base-content/40 text-sm font-medium select-none">₹</span>
           <input
-            type="number"
+            type="text"
+            inputMode="decimal"
             className="grow"
-            placeholder="e.g. 150"
-            min="1"
+            placeholder="e.g. 150 or 120.50"
             value={price}
             onChange={(e) => onPriceChange(e.target.value)}
             disabled={disabled}

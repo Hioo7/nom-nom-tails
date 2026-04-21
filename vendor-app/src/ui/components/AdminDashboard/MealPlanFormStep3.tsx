@@ -1,4 +1,5 @@
 import type { Dish } from '../../../types';
+import { formatCurrency } from './orderFormatters';
 
 interface MealPlanFormStep3Props {
   name: string;
@@ -19,10 +20,7 @@ export default function MealPlanFormStep3({
   selectedDishes,
   errorMessage,
 }: MealPlanFormStep3Props) {
-  const priceNum = Number(price);
-  const priceDisplay = isNaN(priceNum)
-    ? price
-    : priceNum.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  const priceDisplay = price.trim() || '—';
 
   return (
     <div className="flex flex-col gap-3">
@@ -73,7 +71,9 @@ export default function MealPlanFormStep3({
                 )}
               </div>
               <span className="text-sm text-base-content">{d.name}</span>
-              <span className="ml-auto text-xs text-base-content/50">₹{d.price}</span>
+              <span className="ml-auto text-xs text-base-content/50">
+                {formatCurrency(d.price)}
+              </span>
             </li>
           ))}
         </ul>

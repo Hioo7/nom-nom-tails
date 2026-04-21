@@ -58,6 +58,21 @@ export interface UpdateUserPayload {
   role?: 'ADMIN' | 'DELIVERY_PARTNER';
 }
 
+export interface CustomerSummary {
+  id: string;
+  email: string;
+  name: string;
+  role: 'CUSTOMER';
+  isActive: boolean;
+  isLoyalty: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpdateCustomerLoyaltyPayload {
+  isLoyalty: boolean;
+}
+
 export interface FieldErrors {
   [field: string]: string;
 }
