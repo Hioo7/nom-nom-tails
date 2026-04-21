@@ -1,7 +1,7 @@
 services:
   postgres:
     image: postgres:16-alpine
-    env_file: .env.local
+    env_file: .env
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -15,6 +15,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
 
   minio:
     image: minio/minio:latest
@@ -37,3 +38,28 @@ services:
 volumes:
   postgres_dev_data:
   minio_dev_data:
+
+
+# =======
+#   backend:
+#     build:
+#       context: ./backend
+#       dockerfile: Dockerfile.dev
+#     env_file: .env
+#     environment:
+#       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+#       NODE_ENV: development
+#     ports:
+#       - "${PORT:-3000}:${PORT:-3000}"
+#     volumes:
+#       - ./backend/src:/app/src
+#       - ./backend/prisma:/app/prisma
+#       - backend_node_modules:/app/node_modules
+#     depends_on:
+#       postgres:
+#         condition: service_healthy
+
+# volumes:
+#   postgres_dev_data:
+#   backend_node_modules:
+# >>>>>>> 1c1e62c (feat: client-app build finish)

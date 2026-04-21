@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+
 import MealPlanService from '../services/mealPlan.service';
 import { parseCreateMealPlanBody, parseUpdateMealPlanBody } from '../validators/mealPlan.validator';
 import AppError from '../lib/AppError';
@@ -83,6 +84,7 @@ export async function uploadMealPlanImage(
     }
     const url = await mealPlanService.uploadImage(req.params['id'] as string, req.file.buffer);
     res.status(200).json({ data: { url } });
+
   } catch (err) {
     next(err);
   }

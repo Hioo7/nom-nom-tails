@@ -1,4 +1,5 @@
 import { Router } from 'express';
+
 import { Role } from '@prisma/client';
 import multer from 'multer';
 import { authenticate } from '../middleware/authenticate';
@@ -33,5 +34,6 @@ router.get('/:id', ...guard, getMealPlan);
 router.patch('/:id', ...guard, updateMealPlan);
 router.delete('/:id', ...guard, deleteMealPlan);
 router.post('/:id/image', ...guard, upload.single('image'), uploadMealPlanImage);
+
 
 export default router;

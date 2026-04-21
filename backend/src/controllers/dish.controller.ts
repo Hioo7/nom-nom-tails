@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+
 import DishService from '../services/dish.service';
 import { parseCreateDishBody, parseUpdateDishBody } from '../validators/dish.validator';
 import AppError from '../lib/AppError';
@@ -82,6 +83,7 @@ export async function uploadDishImage(
       req.file.buffer,
     );
     res.status(200).json({ data: { url } });
+
   } catch (err) {
     next(err);
   }
