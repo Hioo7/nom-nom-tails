@@ -1,4 +1,5 @@
 import {
+  AddressType,
   DeliveryStatus,
   OrderStatus,
   PaymentMethod,
@@ -7,10 +8,23 @@ import {
 } from '@prisma/client';
 import prisma from '../../src/lib/prisma';
 import { StaffResult } from './adminAndDelivery';
-import { CustomersResult, CustomerRecord } from './customers';
+import { CustomersResult } from './customers';
 import { MealPlansResult } from './mealPlans';
 import { TimeSlotsResult } from './timeSlots';
 import { DishRecord } from './dishes';
+
+interface DeliveryAddressSnapshot {
+  deliveryFullName: string;
+  deliveryPhone: string;
+  deliveryLine1: string;
+  deliveryLine2: string | null;
+  deliveryCity: string;
+  deliveryState: string;
+  deliveryPin: string;
+  deliveryLat: number;
+  deliveryLng: number;
+  deliveryAddressType: AddressType;
+}
 
 interface SeedOrderConfig {
   deliveryDate: Date;
@@ -36,7 +50,7 @@ interface SeedSubscriptionConfig {
   endDate: Date;
   status: SubscriptionStatus;
   isAutoRenew: boolean;
-  customer: CustomerRecord;
+  address: DeliveryAddressSnapshot;
   dishes: DishRecord[];
   orders: SeedOrderConfig[];
 }
@@ -71,8 +85,16 @@ async function createSubscriptionWithOrders(
         timeSlotId: config.timeSlotId,
         subscriptionId: subscription.id,
         deliveryDate: orderConfig.deliveryDate,
-        lat: config.customer.lat,
-        lng: config.customer.lng,
+        deliveryFullName: config.address.deliveryFullName,
+        deliveryPhone: config.address.deliveryPhone,
+        deliveryLine1: config.address.deliveryLine1,
+        deliveryLine2: config.address.deliveryLine2,
+        deliveryCity: config.address.deliveryCity,
+        deliveryState: config.address.deliveryState,
+        deliveryPin: config.address.deliveryPin,
+        deliveryLat: config.address.deliveryLat,
+        deliveryLng: config.address.deliveryLng,
+        deliveryAddressType: config.address.deliveryAddressType,
         status: orderConfig.status,
         items: {
           create: config.dishes.map((dish) => ({ dishId: dish.id, quantity: 1 })),
@@ -129,6 +151,30 @@ export async function seedSubscriptions(input: SeedSubscriptionsInput): Promise<
   const suresh = staff.deliveryPartner1.id;
   const meena = staff.deliveryPartner2.id;
 
+  // Load all customer addresses up front
+  const customerIds = Object.values(customers).map((c) => c.id);
+  const addressRecords = await prisma.address.findMany({
+    where: { userId: { in: customerIds } },
+  });
+  const addrByCustomer = new Map(addressRecords.map((a) => [a.userId, a]));
+
+  function snapshotFor(customerId: string): DeliveryAddressSnapshot {
+    const a = addrByCustomer.get(customerId);
+    if (!a) throw new Error(`No address found for customer ${customerId}`);
+    return {
+      deliveryFullName: a.fullName,
+      deliveryPhone: a.phone,
+      deliveryLine1: a.line1,
+      deliveryLine2: a.line2,
+      deliveryCity: a.city,
+      deliveryState: a.state,
+      deliveryPin: a.pin,
+      deliveryLat: a.lat,
+      deliveryLng: a.lng,
+      deliveryAddressType: a.type,
+    };
+  }
+
   const subscriptionConfigs: SeedSubscriptionConfig[] = [
     // ── Arjun: Weekly Wellness, ACTIVE, Mon morning ──────────────────────────
     {
@@ -139,7 +185,7 @@ export async function seedSubscriptions(input: SeedSubscriptionsInput): Promise<
       endDate: makeDate(2026, 5, 3),
       status: SubscriptionStatus.ACTIVE,
       isAutoRenew: true,
-      customer: customers.arjun,
+      address: snapshotFor(customers.arjun.id),
       dishes: mealPlans.weeklyWellness.dishes,
       orders: [
         {
@@ -203,7 +249,7 @@ export async function seedSubscriptions(input: SeedSubscriptionsInput): Promise<
       endDate: makeDate(2026, 4, 30),
       status: SubscriptionStatus.ACTIVE,
       isAutoRenew: false,
-      customer: customers.arjun,
+      address: snapshotFor(customers.arjun.id),
       dishes: mealPlans.southIndianSpecial.dishes,
       orders: [
         {
@@ -270,7 +316,7 @@ export async function seedSubscriptions(input: SeedSubscriptionsInput): Promise<
       endDate: makeDate(2026, 5, 3),
       status: SubscriptionStatus.ACTIVE,
       isAutoRenew: true,
-      customer: customers.priya,
+      address: snapshotFor(customers.priya.id),
       dishes: mealPlans.southIndianSpecial.dishes,
       orders: [
         {
@@ -334,7 +380,7 @@ export async function seedSubscriptions(input: SeedSubscriptionsInput): Promise<
       endDate: makeDate(2026, 4, 6),
       status: SubscriptionStatus.EXPIRED,
       isAutoRenew: false,
-      customer: customers.vikram,
+      address: snapshotFor(customers.vikram.id),
       dishes: mealPlans.weeklyWellness.dishes,
       orders: [
         {
@@ -409,7 +455,7 @@ export async function seedSubscriptions(input: SeedSubscriptionsInput): Promise<
       endDate: makeDate(2026, 4, 30),
       status: SubscriptionStatus.CANCELLED,
       isAutoRenew: false,
-      customer: customers.anjali,
+      address: snapshotFor(customers.anjali.id),
       dishes: mealPlans.quickBites.dishes,
       orders: [
         { deliveryDate: makeDate(2026, 4, 3, 18), status: OrderStatus.CANCELLED },
@@ -426,7 +472,7 @@ export async function seedSubscriptions(input: SeedSubscriptionsInput): Promise<
       endDate: makeDate(2026, 5, 2),
       status: SubscriptionStatus.ACTIVE,
       isAutoRenew: true,
-      customer: customers.karan,
+      address: snapshotFor(customers.karan.id),
       dishes: mealPlans.weeklyWellness.dishes,
       orders: [
         {
@@ -485,7 +531,7 @@ export async function seedSubscriptions(input: SeedSubscriptionsInput): Promise<
       endDate: makeDate(2026, 5, 3),
       status: SubscriptionStatus.ACTIVE,
       isAutoRenew: true,
-      customer: customers.karan,
+      address: snapshotFor(customers.karan.id),
       dishes: mealPlans.southIndianSpecial.dishes,
       orders: [
         {
@@ -551,7 +597,7 @@ export async function seedSubscriptions(input: SeedSubscriptionsInput): Promise<
       endDate: makeDate(2026, 5, 3),
       status: SubscriptionStatus.ACTIVE,
       isAutoRenew: false,
-      customer: customers.sneha,
+      address: snapshotFor(customers.sneha.id),
       dishes: mealPlans.southIndianSpecial.dishes,
       orders: [
         {

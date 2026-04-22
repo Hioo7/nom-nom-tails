@@ -32,6 +32,8 @@ class AddressService {
         city: data.city,
         state: data.state,
         pin: data.pin,
+        lat: data.lat,
+        lng: data.lng,
       },
     });
   }

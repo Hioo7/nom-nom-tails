@@ -11,6 +11,8 @@ export const CreateAddressSchema = z.object({
   city: z.string().trim().min(1, 'City is required'),
   state: z.string().trim().min(1, 'State is required'),
   pin: z.string().trim().min(1, 'PIN code is required'),
+  lat: z.number({ error: 'Latitude is required' }),
+  lng: z.number({ error: 'Longitude is required' }),
 });
 
 export const UpdateAddressSchema = CreateAddressSchema.partial();

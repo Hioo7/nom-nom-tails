@@ -30,7 +30,7 @@ export interface DeliveryPartnerTaskSummary {
   deliveryDate: Date;
   itemCount: number;
   status: DeliveryStatus;
-  locationLabel: string | null;
+  locationLabel: string;
   latitude: number;
   longitude: number;
   timeSlot: DeliveryPartnerTaskTimeSlot;

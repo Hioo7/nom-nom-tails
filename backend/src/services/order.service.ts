@@ -182,7 +182,7 @@ function toSafeSettlementOrder(settlement: SettlementRecord): SafeSettlementOrde
     orderNumber: toOrderNumber(settlement.orderId),
     customerName: settlement.order.customer.name,
     customerEmail: settlement.order.customer.email,
-    customerPhone: settlement.order.customer.phone,
+    customerPhone: settlement.order.deliveryPhone,
     deliveryDate: settlement.order.deliveryDate,
     status: settlement.status,
     totalAmount: settlement.totalAmount,

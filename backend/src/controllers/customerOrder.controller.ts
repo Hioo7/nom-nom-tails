@@ -12,7 +12,13 @@ export async function createOrder(req: Request, res: Response, next: NextFunctio
       throw new AppError(400, parsed.error.issues[0].message);
     }
 
-    const { items, deliveryDate, lat, lng } = parsed.data;
+    const { items, deliveryDate, addressId } = parsed.data;
+
+    // Verify the address belongs to this customer
+    const address = await prisma.address.findUnique({ where: { id: addressId } });
+    if (!address || address.userId !== customerId) {
+      throw new AppError(404, 'Address not found');
+    }
 
     // Pick first active time slot
     const timeSlot = await prisma.timeSlot.findFirst({ where: { isActive: true } });
@@ -32,8 +38,16 @@ export async function createOrder(req: Request, res: Response, next: NextFunctio
         customerId,
         timeSlotId: timeSlot.id,
         deliveryDate: new Date(deliveryDate),
-        lat,
-        lng,
+        deliveryFullName: address.fullName,
+        deliveryPhone: address.phone,
+        deliveryLine1: address.line1,
+        deliveryLine2: address.line2,
+        deliveryCity: address.city,
+        deliveryState: address.state,
+        deliveryPin: address.pin,
+        deliveryLat: address.lat,
+        deliveryLng: address.lng,
+        deliveryAddressType: address.type,
         items: {
           create: items.map((item) => ({
             dishId: item.dishId,

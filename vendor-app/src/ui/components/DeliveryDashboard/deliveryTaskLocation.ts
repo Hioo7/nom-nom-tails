@@ -4,7 +4,8 @@ export function hasValidTaskCoordinates(task: DeliveryPartnerTaskSummary): boole
   return Number.isFinite(task.latitude) && Number.isFinite(task.longitude);
 }
 
-export function buildGoogleMapsLocationUrl(task: DeliveryPartnerTaskSummary): string {
-  const query = `${task.latitude},${task.longitude}`;
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+export function buildGoogleMapsEmbedUrl(task: DeliveryPartnerTaskSummary): string {
+  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string;
+  const q = `${task.latitude},${task.longitude}`;
+  return `https://www.google.com/maps/embed/v1/place?key=${apiKey}&q=${encodeURIComponent(q)}&zoom=16`;
 }

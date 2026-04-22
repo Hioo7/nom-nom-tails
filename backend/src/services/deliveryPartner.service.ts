@@ -16,7 +16,9 @@ type DeliveryPartnerTaskRecord = Prisma.DeliveryTaskGetPayload<{
   include: {
     order: {
       include: {
-        customer: true;
+        customer: {
+          select: { name: true; email: true };
+        };
         timeSlot: true;
         items: true;
       };
@@ -48,23 +50,24 @@ function toItemCount(items: { quantity: number }[]): number {
 }
 
 function toTaskSummary(task: DeliveryPartnerTaskRecord): DeliveryPartnerTaskSummary {
+  const o = task.order;
   return {
     taskId: task.id,
     orderId: task.orderId,
     orderNumber: toOrderNumber(task.orderId),
-    customerName: task.order.customer.name,
-    customerPhone: task.order.customer.phone,
-    deliveryDate: task.order.deliveryDate,
-    itemCount: toItemCount(task.order.items),
+    customerName: o.customer.name,
+    customerPhone: o.deliveryPhone,
+    deliveryDate: o.deliveryDate,
+    itemCount: toItemCount(o.items),
     status: task.status,
-    locationLabel: null,
-    latitude: task.order.lat,
-    longitude: task.order.lng,
+    locationLabel: `${o.deliveryLine1}, ${o.deliveryCity}, ${o.deliveryState} - ${o.deliveryPin}`,
+    latitude: o.deliveryLat,
+    longitude: o.deliveryLng,
     timeSlot: {
-      id: task.order.timeSlot.id,
-      day: task.order.timeSlot.day,
-      startTime: task.order.timeSlot.startTime,
-      endTime: task.order.timeSlot.endTime,
+      id: o.timeSlot.id,
+      day: o.timeSlot.day,
+      startTime: o.timeSlot.startTime,
+      endTime: o.timeSlot.endTime,
     },
   };
 }
@@ -133,7 +136,7 @@ class DeliveryPartnerService {
       include: {
         order: {
           include: {
-            customer: true,
+            customer: { select: { name: true, email: true } },
             timeSlot: true,
             items: true,
           },
@@ -156,7 +159,7 @@ class DeliveryPartnerService {
       include: {
         order: {
           include: {
-            customer: true,
+            customer: { select: { name: true, email: true } },
             timeSlot: true,
             items: true,
           },

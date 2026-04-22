@@ -1,4 +1,5 @@
 import {
+  AddressType,
   DeliveryStatus,
   OrderStatus,
   PaymentMethod,
@@ -10,12 +11,24 @@ import { CustomersResult } from './customers';
 import { DishRecord, DishesResult } from './dishes';
 import { TimeSlotRecord, TimeSlotsResult } from './timeSlots';
 
+interface DeliveryAddressSnapshot {
+  deliveryFullName: string;
+  deliveryPhone: string;
+  deliveryLine1: string;
+  deliveryLine2: string | null;
+  deliveryCity: string;
+  deliveryState: string;
+  deliveryPin: string;
+  deliveryLat: number;
+  deliveryLng: number;
+  deliveryAddressType: AddressType;
+}
+
 interface StandaloneOrderConfig {
   customerId: string;
   timeSlotId: string;
   deliveryDate: Date;
-  lat: number;
-  lng: number;
+  address: DeliveryAddressSnapshot;
   status: OrderStatus;
   items: Array<{ dishId: string; quantity: number; price: number }>;
   settlement?: {
@@ -66,8 +79,16 @@ async function createStandaloneOrder(config: StandaloneOrderConfig): Promise<voi
       customerId: config.customerId,
       timeSlotId: config.timeSlotId,
       deliveryDate: config.deliveryDate,
-      lat: config.lat,
-      lng: config.lng,
+      deliveryFullName: config.address.deliveryFullName,
+      deliveryPhone: config.address.deliveryPhone,
+      deliveryLine1: config.address.deliveryLine1,
+      deliveryLine2: config.address.deliveryLine2,
+      deliveryCity: config.address.deliveryCity,
+      deliveryState: config.address.deliveryState,
+      deliveryPin: config.address.deliveryPin,
+      deliveryLat: config.address.deliveryLat,
+      deliveryLng: config.address.deliveryLng,
+      deliveryAddressType: config.address.deliveryAddressType,
       status: config.status,
       items: {
         create: config.items.map((item) => ({ dishId: item.dishId, quantity: item.quantity })),
@@ -134,6 +155,30 @@ export async function seedStandaloneOrders(input: SeedStandaloneOrdersInput): Pr
   const suresh = staff.deliveryPartner1.id;
   const meena = staff.deliveryPartner2.id;
 
+  // Load all customer addresses up front
+  const customerIds = Object.values(customers).map((c) => c.id);
+  const addressRecords = await prisma.address.findMany({
+    where: { userId: { in: customerIds } },
+  });
+  const addrByCustomer = new Map(addressRecords.map((a) => [a.userId, a]));
+
+  function snapshotFor(customerId: string): DeliveryAddressSnapshot {
+    const a = addrByCustomer.get(customerId);
+    if (!a) throw new Error(`No address found for customer ${customerId}`);
+    return {
+      deliveryFullName: a.fullName,
+      deliveryPhone: a.phone,
+      deliveryLine1: a.line1,
+      deliveryLine2: a.line2,
+      deliveryCity: a.city,
+      deliveryState: a.state,
+      deliveryPin: a.pin,
+      deliveryLat: a.lat,
+      deliveryLng: a.lng,
+      deliveryAddressType: a.type,
+    };
+  }
+
   // Rahul items for the upcoming order
   const rahulUpcomingItems = dishItems(
     [dishes.chickenBowl, dishes.sandwich],
@@ -179,25 +224,21 @@ export async function seedStandaloneOrders(input: SeedStandaloneOrdersInput): Pr
 
   const orderConfigs: StandaloneOrderConfig[] = [
     // ── Rahul: 2x Chicken Bowl + 1x Sandwich, Wed morning 2026-04-23, PENDING ──
-    // This shows in the upcoming orders view (tomorrow from seed date 2026-04-22)
     {
       customerId: customers.rahul.id,
       timeSlotId: timeSlots.wednesdayMorning.id,
       deliveryDate: makeDate(2026, 4, 23),
-      lat: customers.rahul.lat,
-      lng: customers.rahul.lng,
+      address: snapshotFor(customers.rahul.id),
       status: OrderStatus.PENDING,
       items: rahulUpcomingItems,
     },
 
     // ── Divya: 1x Dosa + 2x Idly, Wed morning 2026-04-23, CONFIRMED ───────────
-    // Also shows in upcoming orders view
     {
       customerId: customers.divya.id,
       timeSlotId: timeSlots.wednesdayMorning.id,
       deliveryDate: makeDate(2026, 4, 23),
-      lat: customers.divya.lat,
-      lng: customers.divya.lng,
+      address: snapshotFor(customers.divya.id),
       status: OrderStatus.CONFIRMED,
       items: divyaUpcomingItems,
       settlement: {
@@ -212,8 +253,7 @@ export async function seedStandaloneOrders(input: SeedStandaloneOrdersInput): Pr
       customerId: customers.rahul.id,
       timeSlotId: timeSlots.mondayMorning.id,
       deliveryDate: makeDate(2026, 4, 7),
-      lat: customers.rahul.lat,
-      lng: customers.rahul.lng,
+      address: snapshotFor(customers.rahul.id),
       status: OrderStatus.DELIVERED,
       items: rahulOldItems,
       settlement: {
@@ -234,8 +274,7 @@ export async function seedStandaloneOrders(input: SeedStandaloneOrdersInput): Pr
       customerId: customers.aditya.id,
       timeSlotId: timeSlots.saturdayBrunch.id,
       deliveryDate: makeDate(2026, 4, 12, 9),
-      lat: customers.aditya.lat,
-      lng: customers.aditya.lng,
+      address: snapshotFor(customers.aditya.id),
       status: OrderStatus.CANCELLED,
       items: adityaCancelledItems,
     },
@@ -245,8 +284,7 @@ export async function seedStandaloneOrders(input: SeedStandaloneOrdersInput): Pr
       customerId: customers.pooja.id,
       timeSlotId: timeSlots.saturdayBrunch.id,
       deliveryDate: makeDate(2026, 4, 12, 9),
-      lat: customers.pooja.lat,
-      lng: customers.pooja.lng,
+      address: snapshotFor(customers.pooja.id),
       status: OrderStatus.DELIVERED,
       items: poojaDeliveredItems,
       settlement: {
@@ -267,22 +305,19 @@ export async function seedStandaloneOrders(input: SeedStandaloneOrdersInput): Pr
       customerId: customers.pooja.id,
       timeSlotId: timeSlots.saturdayBrunch.id,
       deliveryDate: makeDate(2026, 4, 26, 9),
-      lat: customers.pooja.lat,
-      lng: customers.pooja.lng,
+      address: snapshotFor(customers.pooja.id),
       status: OrderStatus.PENDING,
       items: poojaFutureItems,
     },
 
     // ── AVAILABLE DELIVERY TASKS (deliveryDate = today, dynamic) ─────────────
-    // These always show in the delivery partner's available tasks view.
 
     // Priya: 1x Chicken Bowl + 1x Masala Dosa — UNSETTLED
     {
       customerId: customers.priya.id,
       timeSlotId: todaySlot.id,
       deliveryDate: todayDate,
-      lat: customers.priya.lat,
-      lng: customers.priya.lng,
+      address: snapshotFor(customers.priya.id),
       status: OrderStatus.READY_FOR_DELIVERY,
       items: priyaAvailableItems,
       settlement: {
@@ -298,8 +333,7 @@ export async function seedStandaloneOrders(input: SeedStandaloneOrdersInput): Pr
       customerId: customers.aditya.id,
       timeSlotId: todaySlot.id,
       deliveryDate: todayDate,
-      lat: customers.aditya.lat,
-      lng: customers.aditya.lng,
+      address: snapshotFor(customers.aditya.id),
       status: OrderStatus.READY_FOR_DELIVERY,
       items: adityaAvailableItems,
       settlement: {
@@ -317,8 +351,7 @@ export async function seedStandaloneOrders(input: SeedStandaloneOrdersInput): Pr
       customerId: customers.pooja.id,
       timeSlotId: todaySlot.id,
       deliveryDate: todayDate,
-      lat: customers.pooja.lat,
-      lng: customers.pooja.lng,
+      address: snapshotFor(customers.pooja.id),
       status: OrderStatus.READY_FOR_DELIVERY,
       items: poojaTodayItems,
       settlement: {
@@ -332,15 +365,13 @@ export async function seedStandaloneOrders(input: SeedStandaloneOrdersInput): Pr
     },
 
     // ── SAME-DAY ORDERS AWAITING ADMIN APPROVAL ───────────────────────────────
-    // These appear in the upcoming orders view with Accept / Reject buttons.
 
     // Rahul: 1x Chicken Bowl — placed this morning, awaiting approval
     {
       customerId: customers.rahul.id,
       timeSlotId: todaySlot.id,
       deliveryDate: todayDate,
-      lat: customers.rahul.lat,
-      lng: customers.rahul.lng,
+      address: snapshotFor(customers.rahul.id),
       status: OrderStatus.AWAITING_APPROVAL,
       items: rahulSameDayItems,
     },
@@ -350,8 +381,7 @@ export async function seedStandaloneOrders(input: SeedStandaloneOrdersInput): Pr
       customerId: customers.divya.id,
       timeSlotId: todaySlot.id,
       deliveryDate: todayDate,
-      lat: customers.divya.lat,
-      lng: customers.divya.lng,
+      address: snapshotFor(customers.divya.id),
       status: OrderStatus.AWAITING_APPROVAL,
       items: divyaSameDayItems,
     },

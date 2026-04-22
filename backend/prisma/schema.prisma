@@ -74,7 +74,6 @@ model User {
   email         String         @unique
   password      String
   name          String
-  phone         String?
   role          Role           @default(CUSTOMER)
   isActive      Boolean        @default(true)
   isLoyalty     Boolean        @default(false)
@@ -100,6 +99,8 @@ model Address {
   city      String
   state     String
   pin       String
+  lat       Float
+  lng       Float
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
 }
@@ -211,10 +212,18 @@ model Order {
   timeSlotId     String
   subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
   subscriptionId String?
-  deliveryDate   DateTime
-  lat            Float
-  lng            Float
-  status         OrderStatus   @default(PENDING)
+  deliveryDate         DateTime
+  deliveryFullName     String
+  deliveryPhone        String
+  deliveryLine1        String
+  deliveryLine2        String?
+  deliveryCity         String
+  deliveryState        String
+  deliveryPin          String
+  deliveryLat          Float
+  deliveryLng          Float
+  deliveryAddressType  AddressType
+  status               OrderStatus   @default(PENDING)
   items          OrderItem[]
   settlement     Settlement?
   deliveryTask   DeliveryTask?

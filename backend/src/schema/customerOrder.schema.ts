@@ -10,9 +10,7 @@ export const CreateCustomerOrderSchema = z.object({
     )
     .min(1, 'Order must have at least one item'),
   deliveryDate: z.string().min(1, 'Delivery date is required'),
-  lat: z.number().optional().default(0),
-  lng: z.number().optional().default(0),
-  address: z.string().trim().min(1, 'Delivery address is required'),
+  addressId: z.string().min(1, 'Delivery address is required'),
 });
 
 export type CreateCustomerOrderInput = z.infer<typeof CreateCustomerOrderSchema>;

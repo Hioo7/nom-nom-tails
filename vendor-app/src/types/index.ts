@@ -4,7 +4,6 @@ export interface SafeUser {
   id: string;
   email: string;
   name: string;
-  phone: string | null;
   role: Role;
   isActive: boolean;
   isLoyalty: boolean;
@@ -49,7 +48,6 @@ export interface CreateUserPayload {
   name: string;
   email: string;
   password: string;
-  phone?: string;
   role: 'ADMIN' | 'DELIVERY_PARTNER';
 }
 
@@ -57,7 +55,6 @@ export interface UpdateUserPayload {
   name?: string;
   email?: string;
   password?: string;
-  phone?: string;
   role?: 'ADMIN' | 'DELIVERY_PARTNER';
 }
 
@@ -239,7 +236,7 @@ export interface DeliveryPartnerTaskSummary {
   deliveryDate: string;
   itemCount: number;
   status: DeliveryTaskStatus;
-  locationLabel: string | null;
+  locationLabel: string;
   latitude: number;
   longitude: number;
   timeSlot: DeliveryPartnerTaskTimeSlot;
