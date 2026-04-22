@@ -56,6 +56,32 @@ export async function fulfillOrder(
   }
 }
 
+export async function approveOrder(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    await orderService.approveOrder(req.params['id'] as string);
+    res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function rejectOrder(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    await orderService.rejectOrder(req.params['id'] as string);
+    res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function listPendingSettlements(
   _req: Request,
   res: Response,

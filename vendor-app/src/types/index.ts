@@ -4,6 +4,7 @@ export interface SafeUser {
   id: string;
   email: string;
   name: string;
+  phone: string | null;
   role: Role;
   isActive: boolean;
   isLoyalty: boolean;
@@ -48,6 +49,7 @@ export interface CreateUserPayload {
   name: string;
   email: string;
   password: string;
+  phone?: string;
   role: 'ADMIN' | 'DELIVERY_PARTNER';
 }
 
@@ -55,6 +57,7 @@ export interface UpdateUserPayload {
   name?: string;
   email?: string;
   password?: string;
+  phone?: string;
   role?: 'ADMIN' | 'DELIVERY_PARTNER';
 }
 
@@ -62,6 +65,7 @@ export interface CustomerSummary {
   id: string;
   email: string;
   name: string;
+  phone: string | null;
   role: 'CUSTOMER';
   isActive: boolean;
   isLoyalty: boolean;
@@ -231,13 +235,22 @@ export interface DeliveryPartnerTaskSummary {
   orderId: string;
   orderNumber: string;
   customerName: string;
+  customerPhone: string | null;
   deliveryDate: string;
   itemCount: number;
   status: DeliveryTaskStatus;
+  locationLabel: string | null;
+  latitude: number;
+  longitude: number;
   timeSlot: DeliveryPartnerTaskTimeSlot;
 }
 
+export interface FailDeliveryTaskPayload {
+  failureReason: string;
+}
+
 export type AdminOrderStatus =
+  | 'AWAITING_APPROVAL'
   | 'PENDING'
   | 'CONFIRMED'
   | 'READY_FOR_DELIVERY'
@@ -313,6 +326,7 @@ export interface PendingSettlementOrder {
   orderNumber: string;
   customerName: string;
   customerEmail: string;
+  customerPhone: string | null;
   deliveryDate: string;
   status: SettlementStatus;
   totalAmount: number;

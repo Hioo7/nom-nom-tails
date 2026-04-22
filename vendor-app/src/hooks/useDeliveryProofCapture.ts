@@ -71,7 +71,7 @@ export function useDeliveryProofCapture(): UseDeliveryProofCaptureReturn {
 
   const startCamera = useCallback(async () => {
     if (!hasCameraSupport) {
-      setCameraError('Phone camera is not ready here. Use the camera button below.');
+      setCameraError('Phone camera is not ready here. You can still upload a photo from the gallery.');
       setIsStarting(false);
       return;
     }
@@ -95,7 +95,7 @@ export function useDeliveryProofCapture(): UseDeliveryProofCaptureReturn {
         await videoRef.current.play();
       }
     } catch {
-      setCameraError('Phone camera did not open. Use the button below.');
+      setCameraError('Phone camera did not open. Upload from the gallery or try again.');
     } finally {
       setIsStarting(false);
     }
@@ -118,7 +118,7 @@ export function useDeliveryProofCapture(): UseDeliveryProofCaptureReturn {
     const video = videoRef.current;
 
     if (!video || video.videoWidth === 0 || video.videoHeight === 0) {
-      setCameraError('Wait for the camera, then try again.');
+      setCameraError('Wait for the live camera, then try again.');
       return;
     }
 

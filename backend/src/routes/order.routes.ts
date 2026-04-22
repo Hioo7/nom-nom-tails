@@ -1,12 +1,14 @@
 import { Role } from '@prisma/client';
 import { Router } from 'express';
 import {
+  approveOrder,
   fulfillOrder,
   getOrderDetails,
   getUpcomingProcurementSummary,
   listPendingSettlements,
   listUpcomingOrders,
   recordSettlementPayment,
+  rejectOrder,
 } from '../controllers/order.controller';
 import { authenticate } from '../middleware/authenticate';
 import { requireRole } from '../middleware/requireRole';
@@ -18,6 +20,8 @@ router.get('/upcoming', ...adminGuard, listUpcomingOrders);
 router.get('/upcoming/procurement', ...adminGuard, getUpcomingProcurementSummary);
 router.get('/settlements', ...adminGuard, listPendingSettlements);
 router.get('/:id', ...adminGuard, getOrderDetails);
+router.post('/:id/approve', ...adminGuard, approveOrder);
+router.post('/:id/reject', ...adminGuard, rejectOrder);
 router.post('/:id/fulfill', ...adminGuard, fulfillOrder);
 router.post('/:id/payments', ...adminGuard, recordSettlementPayment);
 

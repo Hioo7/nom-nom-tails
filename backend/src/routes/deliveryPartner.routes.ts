@@ -4,6 +4,7 @@ import { Router } from 'express';
 import {
   acceptDeliveryTask,
   completeDeliveryTask,
+  failDeliveryTask,
   listAvailableDeliveryTasks,
   listDeliveryPartners,
   listMyDeliveryTasks,
@@ -31,6 +32,7 @@ router.get('/', ...adminGuard, listDeliveryPartners);
 router.get('/me/available-tasks', ...partnerGuard, listAvailableDeliveryTasks);
 router.get('/me/tasks', ...partnerGuard, listMyDeliveryTasks);
 router.post('/tasks/:id/accept', ...partnerGuard, acceptDeliveryTask);
+router.post('/tasks/:id/fail', ...partnerGuard, failDeliveryTask);
 router.post(
   '/tasks/:id/complete',
   ...partnerGuard,

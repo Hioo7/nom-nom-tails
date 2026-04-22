@@ -5,6 +5,7 @@ import LoginPage from './ui/pages/LoginPage';
 import NotFoundPage from './ui/pages/NotFoundPage';
 import AdminDashboardPage from './ui/pages/AdminDashboardPage';
 import DeliveryDashboardPage from './ui/pages/DeliveryDashboardPage';
+import DeliveryProofPage from './ui/pages/DeliveryProofPage';
 import SuperAdminDashboardPage from './ui/pages/SuperAdminDashboardPage';
 
 function App() {
@@ -27,6 +28,14 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={['ADMIN']}>
                 <AdminDashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/delivery/tasks/:taskId/proof"
+            element={
+              <ProtectedRoute allowedRoles={['DELIVERY_PARTNER']}>
+                <DeliveryProofPage />
               </ProtectedRoute>
             }
           />

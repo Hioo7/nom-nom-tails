@@ -10,6 +10,8 @@ interface UseOrderActionsOptions {
 }
 
 interface UseOrderActionsReturn {
+  approveOrder: (orderId: string) => Promise<void>;
+  rejectOrder: (orderId: string) => Promise<void>;
   fulfillOrder: (orderId: string) => Promise<void>;
   recordSettlementPayment: (
     orderId: string,
@@ -28,6 +30,16 @@ export function useOrderActions(options: UseOrderActionsOptions): UseOrderAction
     return token;
   };
 
+  const approveOrder = async (orderId: string): Promise<void> => {
+    await orderService.approveOrder(ensureToken(), orderId);
+    options.onUpcomingChanged?.();
+  };
+
+  const rejectOrder = async (orderId: string): Promise<void> => {
+    await orderService.rejectOrder(ensureToken(), orderId);
+    options.onUpcomingChanged?.();
+  };
+
   const fulfillOrder = async (orderId: string): Promise<void> => {
     await orderService.fulfillOrder(ensureToken(), orderId);
     options.onUpcomingChanged?.();
@@ -41,5 +53,5 @@ export function useOrderActions(options: UseOrderActionsOptions): UseOrderAction
     options.onSettlementsChanged?.();
   };
 
-  return { fulfillOrder, recordSettlementPayment };
+  return { approveOrder, rejectOrder, fulfillOrder, recordSettlementPayment };
 }

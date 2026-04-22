@@ -1,10 +1,18 @@
-import { useState } from 'react';
 import { FiArrowLeft, FiCamera, FiCheckCircle, FiRefreshCcw, FiUpload } from 'react-icons/fi';
 import { useDeliveryProofCapture } from '../../../hooks/useDeliveryProofCapture';
 import type { DeliveryPartnerTaskSummary } from '../../../types';
-import { formatDate, formatTimeSlotLabel } from '../AdminDashboard/orderFormatters';
 
 interface DeliveryCaptureViewProps {
+  task: DeliveryPartnerTaskSummary | null;
+  isLoadingTask: boolean;
+  taskError: string;
+  isSubmitting: boolean;
+  error: string;
+  onBack: () => void;
+  onConfirm: (taskId: string, file: File) => Promise<void>;
+}
+
+interface DeliveryCaptureReadyViewProps {
   task: DeliveryPartnerTaskSummary;
   isSubmitting: boolean;
   error: string;
@@ -12,14 +20,13 @@ interface DeliveryCaptureViewProps {
   onConfirm: (taskId: string, file: File) => Promise<void>;
 }
 
-export default function DeliveryCaptureView({
+function DeliveryCaptureReadyView({
   task,
   isSubmitting,
   error,
   onBack,
   onConfirm,
-}: DeliveryCaptureViewProps) {
-  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+}: DeliveryCaptureReadyViewProps) {
   const {
     videoRef,
     fileInputRef,
@@ -43,152 +50,186 @@ export default function DeliveryCaptureView({
   };
 
   return (
-    <div className="flex flex-col gap-4 p-4">
-      <div className="flex items-center gap-3">
-        <button type="button" className="btn btn-ghost btn-sm rounded-full" onClick={onBack}>
-          <FiArrowLeft size={16} />
-          Back
-        </button>
-        <div className="min-w-0">
-          <h2 className="truncate text-lg font-bold text-base-content">Take Photo</h2>
-          <p className="text-sm text-base-content/60">#{task.orderNumber}</p>
-        </div>
-      </div>
-
-      <div className="card border border-base-200 bg-base-100 shadow-sm">
-        <div className="card-body gap-2 p-4 text-sm text-base-content/70">
-          <p className="font-semibold text-base-content">{task.customerName}</p>
-          <p>{formatDate(task.deliveryDate)}</p>
-          <p>{formatTimeSlotLabel(task.timeSlot)}</p>
-        </div>
-      </div>
-
-      {error ? (
-        <div className="alert alert-error">
-          <span>{error}</span>
-        </div>
-      ) : null}
-
-      {cameraError && !previewUrl ? (
-        <div className="alert alert-warning">
-          <span>{cameraError}</span>
-        </div>
-      ) : null}
-
+    <div className="relative min-h-[100dvh] overflow-hidden bg-neutral">
       <input
         ref={fileInputRef}
         type="file"
         accept="image/*"
-        capture="environment"
         className="hidden"
         onChange={handleFileSelect}
         disabled={isSubmitting}
       />
 
-      <div className="overflow-hidden rounded-[1.75rem] border border-base-200 bg-neutral text-neutral-content shadow-sm">
-        <div className="relative aspect-[3/4] w-full bg-neutral">
-          {previewUrl ? (
-            <img src={previewUrl} alt="Delivery proof" className="h-full w-full object-cover" />
-          ) : hasCameraSupport ? (
-            <video ref={videoRef} className="h-full w-full object-cover" playsInline muted />
-          ) : (
-            <div className="flex h-full items-center justify-center px-6 text-center text-sm text-neutral-content/70">
-              Open the phone camera below and take a clear photo.
-            </div>
-          )}
+      <div className="absolute inset-0 bg-neutral">
+        {previewUrl ? (
+          <img src={previewUrl} alt="Delivery proof" className="h-full w-full object-cover" />
+        ) : hasCameraSupport ? (
+          <video ref={videoRef} className="h-full w-full object-cover" playsInline muted />
+        ) : (
+          <div className="flex h-full items-center justify-center px-6 text-center text-sm text-neutral-content/80">
+            Camera preview is not available here. You can still upload a proof photo from your gallery.
+          </div>
+        )}
 
-          {isStarting && !previewUrl ? (
-            <div className="absolute inset-0 flex items-center justify-center bg-neutral/60">
-              <span className="loading loading-spinner loading-lg text-neutral-content" />
-            </div>
-          ) : null}
-        </div>
+        {isStarting && !previewUrl ? (
+          <div className="absolute inset-0 flex items-center justify-center bg-neutral/55">
+            <span className="loading loading-spinner loading-lg text-neutral-content" />
+          </div>
+        ) : null}
       </div>
 
-      {!previewUrl ? (
-        <div className="grid gap-3">
-          <button
-            type="button"
-            className="btn btn-primary btn-lg w-full"
-            onClick={() => {
-              void capturePhoto();
-            }}
-            disabled={isSubmitting || isStarting || !hasCameraSupport}
-          >
-            <FiCamera size={18} />
-            Take Photo
-          </button>
-          <button
-            type="button"
-            className="btn btn-outline btn-lg w-full"
-            onClick={openPicker}
-            disabled={isSubmitting}
-          >
-            <FiUpload size={18} />
-            Use Phone Camera
-          </button>
-        </div>
-      ) : (
-        <div className="grid gap-3">
-          <button
-            type="button"
-            className="btn btn-outline btn-lg w-full"
-            onClick={() => {
-              void retakePhoto();
-            }}
-            disabled={isSubmitting}
-          >
-            <FiRefreshCcw size={18} />
-            Retake
-          </button>
-          <button
-            type="button"
-            className="btn btn-success btn-lg w-full"
-            onClick={() => setIsConfirmOpen(true)}
-            disabled={isSubmitting}
-          >
-            <FiCheckCircle size={18} />
-            Mark Delivered
-          </button>
-        </div>
-      )}
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.4)_0%,rgba(0,0,0,0.08)_24%,rgba(0,0,0,0)_42%,rgba(0,0,0,0.2)_68%,rgba(0,0,0,0.82)_100%)]" />
 
-      {isConfirmOpen ? (
-        <dialog className="modal modal-open">
-          <div className="modal-box w-full max-w-sm">
-            <h3 className="text-lg font-bold text-base-content">Finish delivery?</h3>
-            <p className="mt-2 text-sm text-base-content/70">
-              This will mark order #{task.orderNumber} as delivered.
-            </p>
+      <div className="absolute left-4 right-4 top-[calc(env(safe-area-inset-top,0px)+1rem)] z-20 flex items-start justify-between gap-3">
+        <button
+          type="button"
+          className="btn btn-sm rounded-full border-none bg-base-100/90 text-base-content shadow-lg backdrop-blur"
+          onClick={onBack}
+        >
+          <FiArrowLeft size={18} />
+          Back
+        </button>
+      </div>
 
-            <div className="modal-action">
+      <div className="absolute left-4 right-4 top-[calc(env(safe-area-inset-top,0px)+4.5rem)] z-20 flex flex-col gap-2">
+        {error ? (
+          <div className="alert alert-error shadow-lg">
+            <span>{error}</span>
+          </div>
+        ) : null}
+
+        {cameraError && !previewUrl ? (
+          <div className="alert alert-warning shadow-lg">
+            <span>{cameraError}</span>
+          </div>
+        ) : null}
+      </div>
+
+      <div className="absolute inset-x-0 bottom-0 z-20">
+        <div className="px-4 pb-[calc(env(safe-area-inset-bottom,0px)+1.25rem)] pt-24">
+          {!previewUrl ? (
+            <div className="flex items-end gap-3">
               <button
                 type="button"
-                className="btn btn-ghost"
-                onClick={() => setIsConfirmOpen(false)}
-                disabled={isSubmitting}
+                className="btn btn-primary btn-lg min-h-14 flex-1 rounded-full shadow-2xl"
+                onClick={() => {
+                  void capturePhoto();
+                }}
+                disabled={isSubmitting || isStarting || !hasCameraSupport}
               >
-                Cancel
+                <FiCamera size={18} />
+                Take Photo
               </button>
               <button
                 type="button"
-                className="btn btn-success"
+                className="btn btn-circle btn-lg border-none bg-base-100/92 text-base-content shadow-2xl backdrop-blur"
+                onClick={openPicker}
+                disabled={isSubmitting}
+                aria-label="Upload from gallery"
+              >
+                <FiUpload size={18} />
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-end gap-3">
+              <button
+                type="button"
+                className="btn btn-success btn-lg min-h-14 flex-1 rounded-full shadow-2xl"
                 onClick={() => {
                   void handleConfirm();
                 }}
                 disabled={isSubmitting || !capturedFile}
               >
-                {isSubmitting ? <span className="loading loading-spinner loading-sm" /> : 'Yes, Mark'}
+                {isSubmitting ? (
+                  <span className="loading loading-spinner loading-sm" />
+                ) : (
+                  <>
+                    <FiCheckCircle size={18} />
+                    Mark Delivered
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                className="btn btn-circle btn-lg border-none bg-base-100/92 text-base-content shadow-2xl backdrop-blur"
+                onClick={() => {
+                  void retakePhoto();
+                }}
+                disabled={isSubmitting}
+                aria-label="Retake photo"
+              >
+                <FiRefreshCcw size={18} />
               </button>
             </div>
-          </div>
-          <form method="dialog" className="modal-backdrop">
-            <button type="button" onClick={() => setIsConfirmOpen(false)}>
-              close
-            </button>
-          </form>
-        </dialog>
-      ) : null}
+          )}
+        </div>
+      </div>
     </div>
+  );
+}
+
+export default function DeliveryCaptureView({
+  task,
+  isLoadingTask,
+  taskError,
+  isSubmitting,
+  error,
+  onBack,
+  onConfirm,
+}: DeliveryCaptureViewProps) {
+  if (!task) {
+    return (
+      <div className="relative min-h-[100dvh] overflow-hidden bg-neutral">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.12),_transparent_48%),linear-gradient(180deg,_rgba(0,0,0,0.12)_0%,_rgba(0,0,0,0.62)_100%)]" />
+
+        <div className="relative z-10 flex min-h-[100dvh] flex-col px-4 py-6">
+          <div className="pt-[calc(env(safe-area-inset-top,0px)+0.25rem)]">
+            <button
+              type="button"
+              className="btn btn-sm rounded-full border-none bg-base-100/90 text-base-content shadow-lg backdrop-blur"
+              onClick={onBack}
+            >
+              <FiArrowLeft size={18} />
+              Back
+            </button>
+          </div>
+
+          <div className="flex flex-1 items-center justify-center">
+            <div className="card w-full max-w-sm border border-base-100/10 bg-base-100/92 shadow-2xl backdrop-blur">
+              <div className="card-body items-center gap-3 text-center">
+                {isLoadingTask ? (
+                  <>
+                    <span className="loading loading-spinner loading-lg text-primary" />
+                    <h2 className="text-lg font-semibold text-base-content">Opening camera view</h2>
+                    <p className="text-sm text-base-content/70">Getting your delivery task ready.</p>
+                  </>
+                ) : (
+                  <>
+                    <FiCamera size={28} className="text-base-content/70" />
+                    <h2 className="text-lg font-semibold text-base-content">Delivery task unavailable</h2>
+                    <p className="text-sm text-base-content/70">
+                      {taskError || 'Go back to My Tasks and reopen the delivery proof page.'}
+                    </p>
+                    <button type="button" className="btn btn-primary mt-2 rounded-full" onClick={onBack}>
+                      Back to My Tasks
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <DeliveryCaptureReadyView
+      task={task}
+      isSubmitting={isSubmitting}
+      error={error}
+      onBack={onBack}
+      onConfirm={onConfirm}
+    />
   );
 }

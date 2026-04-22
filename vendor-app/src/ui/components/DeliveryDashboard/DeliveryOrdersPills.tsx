@@ -1,4 +1,4 @@
-export type DeliveryOrdersSection = 'available' | 'tasks';
+import type { DeliveryOrdersSection } from './deliveryNavigation';
 
 interface DeliveryOrdersPillsProps {
   activeSection: DeliveryOrdersSection;
