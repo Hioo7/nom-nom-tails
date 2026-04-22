@@ -31,6 +31,8 @@ export default function OrdersTab() {
   const [selectedIngredient, setSelectedIngredient] = useState<IngredientOption | null>(null);
   const [ingredientModalAction, setIngredientModalAction] = useState<'add' | 'remove' | null>(null);
   const [fulfillingOrderId, setFulfillingOrderId] = useState<string | null>(null);
+  const [approvingOrderId, setApprovingOrderId] = useState<string | null>(null);
+  const [rejectingOrderId, setRejectingOrderId] = useState<string | null>(null);
   const [isRecordingPayment, setIsRecordingPayment] = useState(false);
   const [isAdjustingIngredient, setIsAdjustingIngredient] = useState(false);
   const [upcomingActionError, setUpcomingActionError] = useState('');
@@ -40,7 +42,7 @@ export default function OrdersTab() {
   const upcomingOrders = useUpcomingOrders();
   const pendingSettlements = usePendingSettlements();
   const ingredientsInventory = useIngredients();
-  const { fulfillOrder, recordSettlementPayment } = useOrderActions({
+  const { approveOrder, rejectOrder, fulfillOrder, recordSettlementPayment } = useOrderActions({
     onUpcomingChanged: upcomingOrders.refetch,
     onSettlementsChanged: pendingSettlements.refetch,
   });
@@ -58,6 +60,32 @@ export default function OrdersTab() {
       );
     } finally {
       setFulfillingOrderId(null);
+    }
+  }
+
+  async function handleApprove(orderId: string): Promise<void> {
+    setUpcomingActionError('');
+    setApprovingOrderId(orderId);
+
+    try {
+      await approveOrder(orderId);
+    } catch (error) {
+      setUpcomingActionError(getErrorMessage(error, 'Failed to accept the order.'));
+    } finally {
+      setApprovingOrderId(null);
+    }
+  }
+
+  async function handleReject(orderId: string): Promise<void> {
+    setUpcomingActionError('');
+    setRejectingOrderId(orderId);
+
+    try {
+      await rejectOrder(orderId);
+    } catch (error) {
+      setUpcomingActionError(getErrorMessage(error, 'Failed to reject the order.'));
+    } finally {
+      setRejectingOrderId(null);
     }
   }
 
@@ -119,11 +147,19 @@ export default function OrdersTab() {
           error={upcomingOrders.error}
           actionError={upcomingActionError}
           fulfillingOrderId={fulfillingOrderId}
+          approvingOrderId={approvingOrderId}
+          rejectingOrderId={rejectingOrderId}
           onRetry={upcomingOrders.refetch}
           onViewDetails={setDetailOrderId}
           onOpenProcurement={() => setIsProcurementOpen(true)}
           onFulfill={(orderId) => {
             void handleFulfill(orderId);
+          }}
+          onApprove={(orderId) => {
+            void handleApprove(orderId);
+          }}
+          onReject={(orderId) => {
+            void handleReject(orderId);
           }}
         />
       ) : activeSection === 'settlements' ? (

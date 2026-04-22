@@ -3,6 +3,7 @@ import type {
   ApiErrorResponse,
   ApiSuccessResponse,
   DeliveryPartnerSummary,
+  FailDeliveryTaskPayload,
   DeliveryPartnerTaskSummary,
 } from '../types';
 
@@ -11,6 +12,7 @@ export interface IDeliveryPartnerService {
   listAvailableTasks(token: string): Promise<DeliveryPartnerTaskSummary[]>;
   listMyTasks(token: string): Promise<DeliveryPartnerTaskSummary[]>;
   acceptTask(token: string, taskId: string): Promise<void>;
+  failTask(token: string, taskId: string, payload: FailDeliveryTaskPayload): Promise<void>;
   completeTask(token: string, taskId: string, file: File): Promise<void>;
 }
 
@@ -70,6 +72,15 @@ export class DeliveryPartnerService implements IDeliveryPartnerService {
     const res = await fetch(`${this.baseUrl}/api/delivery-partners/tasks/${taskId}/accept`, {
       method: 'POST',
       headers: authHeaders(token),
+    });
+    return handleResponse<void>(res);
+  }
+
+  async failTask(token: string, taskId: string, payload: FailDeliveryTaskPayload): Promise<void> {
+    const res = await fetch(`${this.baseUrl}/api/delivery-partners/tasks/${taskId}/fail`, {
+      method: 'POST',
+      headers: authHeaders(token),
+      body: JSON.stringify(payload),
     });
     return handleResponse<void>(res);
   }

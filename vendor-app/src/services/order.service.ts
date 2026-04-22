@@ -13,6 +13,8 @@ export interface IOrderService {
   listUpcomingOrders(token: string): Promise<AdminUpcomingOrder[]>;
   getOrderDetails(token: string, id: string): Promise<AdminOrderDetails>;
   getUpcomingProcurement(token: string): Promise<ProcurementSummary>;
+  approveOrder(token: string, id: string): Promise<void>;
+  rejectOrder(token: string, id: string): Promise<void>;
   fulfillOrder(token: string, id: string): Promise<void>;
   listPendingSettlements(token: string): Promise<PendingSettlementOrder[]>;
   recordSettlementPayment(
@@ -76,6 +78,22 @@ export class OrderService implements IOrderService {
       headers: authHeaders(token),
     });
     return handleResponse<ProcurementSummary>(res);
+  }
+
+  async approveOrder(token: string, id: string): Promise<void> {
+    const res = await fetch(`${this.baseUrl}/api/orders/${id}/approve`, {
+      method: 'POST',
+      headers: authHeaders(token),
+    });
+    return handleResponse<void>(res);
+  }
+
+  async rejectOrder(token: string, id: string): Promise<void> {
+    const res = await fetch(`${this.baseUrl}/api/orders/${id}/reject`, {
+      method: 'POST',
+      headers: authHeaders(token),
+    });
+    return handleResponse<void>(res);
   }
 
   async fulfillOrder(token: string, id: string): Promise<void> {

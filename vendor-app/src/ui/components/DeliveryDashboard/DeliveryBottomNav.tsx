@@ -1,11 +1,10 @@
 import type { ReactNode } from 'react';
 import { FiClipboard, FiUser } from 'react-icons/fi';
-
-type Tab = 'orders' | 'profile';
+import type { DeliveryDashboardTab } from './deliveryNavigation';
 
 interface DeliveryBottomNavProps {
-  activeTab: Tab;
-  onTabChange: (tab: Tab) => void;
+  activeTab: DeliveryDashboardTab;
+  onTabChange: (tab: DeliveryDashboardTab) => void;
 }
 
 interface NavItemProps {

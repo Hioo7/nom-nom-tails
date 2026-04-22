@@ -53,9 +53,13 @@ function toTaskSummary(task: DeliveryPartnerTaskRecord): DeliveryPartnerTaskSumm
     orderId: task.orderId,
     orderNumber: toOrderNumber(task.orderId),
     customerName: task.order.customer.name,
+    customerPhone: task.order.customer.phone,
     deliveryDate: task.order.deliveryDate,
     itemCount: toItemCount(task.order.items),
     status: task.status,
+    locationLabel: null,
+    latitude: task.order.lat,
+    longitude: task.order.lng,
     timeSlot: {
       id: task.order.timeSlot.id,
       day: task.order.timeSlot.day,
@@ -257,6 +261,44 @@ class DeliveryPartnerService {
       await tx.order.update({
         where: { id: task.orderId },
         data: { status: OrderStatus.DELIVERED },
+      });
+    });
+  }
+
+  async failTask(taskId: string, deliveryPartnerId: string, failureReason: string): Promise<void> {
+    const task = await prisma.deliveryTask.findUnique({
+      where: { id: taskId },
+      include: {
+        order: true,
+      },
+    });
+
+    if (!task) {
+      throw new AppError(404, 'Task not found');
+    }
+
+    if (task.deliveryPartnerId !== deliveryPartnerId) {
+      throw new AppError(403, 'This task is not yours');
+    }
+
+    if (task.status !== DeliveryStatus.ASSIGNED && task.status !== DeliveryStatus.PICKED_UP) {
+      throw new AppError(400, 'This task cannot be marked failed');
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.deliveryTask.update({
+        where: { id: taskId },
+        data: {
+          status: DeliveryStatus.FAILED,
+          failureReason,
+          capturedAt: null,
+          completedAt: new Date(),
+        },
+      });
+
+      await tx.order.update({
+        where: { id: task.orderId },
+        data: { status: OrderStatus.CONFIRMED },
       });
     });
   }

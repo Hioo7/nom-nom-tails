@@ -96,6 +96,14 @@ function getUpcomingWindow(referenceDate: Date = new Date()): { start: Date; end
   return { start, end };
 }
 
+function getTodayWindow(): { start: Date; end: Date } {
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  const end = new Date();
+  end.setHours(23, 59, 59, 999);
+  return { start, end };
+}
+
 function isWithinUpcomingWindow(deliveryDate: Date, referenceDate: Date = new Date()): boolean {
   const { start, end } = getUpcomingWindow(referenceDate);
   return deliveryDate >= start && deliveryDate <= end;
@@ -174,6 +182,7 @@ function toSafeSettlementOrder(settlement: SettlementRecord): SafeSettlementOrde
     orderNumber: toOrderNumber(settlement.orderId),
     customerName: settlement.order.customer.name,
     customerEmail: settlement.order.customer.email,
+    customerPhone: settlement.order.customer.phone,
     deliveryDate: settlement.order.deliveryDate,
     status: settlement.status,
     totalAmount: settlement.totalAmount,
@@ -236,24 +245,32 @@ class OrderService {
   }
 
   async listUpcomingOrders(): Promise<SafeUpcomingOrder[]> {
-    const { start, end } = getUpcomingWindow();
-    const orders = await prisma.order.findMany({
-      where: {
-        deliveryDate: { gte: start, lte: end },
-        status: { in: UPCOMING_ORDER_STATUSES },
-      },
-      include: {
-        customer: true,
-        timeSlot: true,
-        items: true,
-      },
-      orderBy: [
-        { deliveryDate: 'asc' },
-        { createdAt: 'asc' },
-      ],
-    });
+    const { start: upcomingStart, end: upcomingEnd } = getUpcomingWindow();
+    const { start: todayStart, end: todayEnd } = getTodayWindow();
 
-    return orders.map(toSafeUpcomingOrder);
+    const include = { customer: true, timeSlot: true, items: true } as const;
+    const orderBy = [{ deliveryDate: 'asc' as const }, { createdAt: 'asc' as const }];
+
+    const [regularOrders, todayOrders] = await Promise.all([
+      prisma.order.findMany({
+        where: {
+          deliveryDate: { gte: upcomingStart, lte: upcomingEnd },
+          status: { in: UPCOMING_ORDER_STATUSES },
+        },
+        include,
+        orderBy,
+      }),
+      prisma.order.findMany({
+        where: {
+          deliveryDate: { gte: todayStart, lte: todayEnd },
+          status: { in: [OrderStatus.AWAITING_APPROVAL, OrderStatus.CONFIRMED] },
+        },
+        include,
+        orderBy,
+      }),
+    ]);
+
+    return [...todayOrders, ...regularOrders].map(toSafeUpcomingOrder);
   }
 
   async getOrderDetails(orderId: string): Promise<SafeOrderDetails> {
@@ -278,30 +295,40 @@ class OrderService {
   }
 
   async getUpcomingProcurementSummary(): Promise<SafeProcurementSummary> {
-    const { start, end } = getUpcomingWindow();
-    const orders = await prisma.order.findMany({
-      where: {
-        deliveryDate: { gte: start, lte: end },
-        status: { in: UPCOMING_ORDER_STATUSES },
-      },
-      include: {
-        items: {
-          include: {
-            dish: {
-              include: {
-                ingredients: {
-                  include: {
-                    ingredient: true,
-                  },
-                },
-              },
+    const { start: upcomingStart, end: upcomingEnd } = getUpcomingWindow();
+    const { start: todayStart, end: todayEnd } = getTodayWindow();
+
+    const include = {
+      items: {
+        include: {
+          dish: {
+            include: {
+              ingredients: { include: { ingredient: true } },
             },
           },
         },
       },
-    });
+    } as const;
 
-    const items: SafeProcurementItem[] = aggregateProcurementRequirements(orders).map((item) => ({
+    const [regularOrders, todayApprovedOrders] = await Promise.all([
+      prisma.order.findMany({
+        where: {
+          deliveryDate: { gte: upcomingStart, lte: upcomingEnd },
+          status: { in: UPCOMING_ORDER_STATUSES },
+        },
+        include,
+      }),
+      prisma.order.findMany({
+        where: {
+          deliveryDate: { gte: todayStart, lte: todayEnd },
+          status: OrderStatus.CONFIRMED,
+        },
+        include,
+      }),
+    ]);
+
+    const allOrders = [...todayApprovedOrders, ...regularOrders];
+    const items: SafeProcurementItem[] = aggregateProcurementRequirements(allOrders).map((item) => ({
       ingredientId: item.ingredientId,
       ingredientName: item.ingredientName,
       unit: item.unit,
@@ -311,7 +338,7 @@ class OrderService {
     }));
 
     return {
-      orderCount: orders.length,
+      orderCount: allOrders.length,
       items,
     };
   }
@@ -341,7 +368,9 @@ class OrderService {
         throw new AppError(404, 'Order not found');
       }
 
-      if (!isWithinUpcomingWindow(order.deliveryDate)) {
+      const { start: todayStart, end: todayEnd } = getTodayWindow();
+      const isTodayOrder = order.deliveryDate >= todayStart && order.deliveryDate <= todayEnd;
+      if (!isTodayOrder && !isWithinUpcomingWindow(order.deliveryDate)) {
         throw new AppError(400, 'Only upcoming orders can be fulfilled here');
       }
 
@@ -406,6 +435,28 @@ class OrderService {
         },
       });
     });
+  }
+
+  async approveOrder(orderId: string): Promise<void> {
+    const order = await prisma.order.findUnique({ where: { id: orderId } });
+    if (!order) {
+      throw new AppError(404, 'Order not found');
+    }
+    if (order.status !== OrderStatus.AWAITING_APPROVAL) {
+      throw new AppError(400, 'Order is not awaiting approval');
+    }
+    await prisma.order.update({ where: { id: orderId }, data: { status: OrderStatus.CONFIRMED } });
+  }
+
+  async rejectOrder(orderId: string): Promise<void> {
+    const order = await prisma.order.findUnique({ where: { id: orderId } });
+    if (!order) {
+      throw new AppError(404, 'Order not found');
+    }
+    if (order.status !== OrderStatus.AWAITING_APPROVAL) {
+      throw new AppError(400, 'Order is not awaiting approval');
+    }
+    await prisma.order.update({ where: { id: orderId }, data: { status: OrderStatus.CANCELLED } });
   }
 
   async listPendingSettlements(): Promise<SafeSettlementOrder[]> {

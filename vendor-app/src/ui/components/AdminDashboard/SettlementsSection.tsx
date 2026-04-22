@@ -20,11 +20,11 @@ export default function SettlementsSection({
   onRecordPayment,
 }: SettlementsSectionProps) {
   return (
-    <div className="p-4 flex flex-col gap-4">
+    <div className="flex flex-col gap-4 p-4">
       <div>
         <h2 className="text-lg font-bold text-base-content">Settlements</h2>
         <p className="text-sm text-base-content/60">
-          Only unsettled and partially paid orders appear here.
+          Track pending dues here. Tap a settlement to review payment records or add a payment.
         </p>
       </div>
 

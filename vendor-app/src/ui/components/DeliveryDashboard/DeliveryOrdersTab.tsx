@@ -1,21 +1,43 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useDeliveryPartnerTasks } from '../../../hooks/useDeliveryPartnerTasks';
 import { useDeliveryTaskActions } from '../../../hooks/useDeliveryTaskActions';
 import type { DeliveryPartnerTaskSummary } from '../../../types';
 import { getErrorMessage } from '../AdminDashboard/orderFormatters';
 import DeliveryAvailableSection from './DeliveryAvailableSection';
-import DeliveryCaptureView from './DeliveryCaptureView';
-import DeliveryOrdersPills, { type DeliveryOrdersSection } from './DeliveryOrdersPills';
+import DeliveryOrdersPills from './DeliveryOrdersPills';
+import { openTaskDialer } from './deliveryTaskCall';
 import DeliveryTasksSection from './DeliveryTasksSection';
+import { getDeliveryProofPath, type DeliveryOrdersSection } from './deliveryNavigation';
 
-export default function DeliveryOrdersTab() {
-  const [activeSection, setActiveSection] = useState<DeliveryOrdersSection>('available');
+interface DeliveryOrdersTabProps {
+  activeSection: DeliveryOrdersSection;
+  refreshToken: string;
+  onSectionChange: (section: DeliveryOrdersSection) => void;
+  onRefreshHandled: () => void;
+}
+
+export default function DeliveryOrdersTab({
+  activeSection,
+  refreshToken,
+  onSectionChange,
+  onRefreshHandled,
+}: DeliveryOrdersTabProps) {
+  const navigate = useNavigate();
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
-  const [selectedTask, setSelectedTask] = useState<DeliveryPartnerTaskSummary | null>(null);
   const [listActionError, setListActionError] = useState('');
-  const [captureError, setCaptureError] = useState('');
   const tasks = useDeliveryPartnerTasks();
-  const { acceptTask, completeTask } = useDeliveryTaskActions();
+  const { acceptTask, failTask } = useDeliveryTaskActions();
+  const { refetch } = tasks;
+
+  useEffect(() => {
+    if (!refreshToken) {
+      return;
+    }
+
+    refetch();
+    onRefreshHandled();
+  }, [onRefreshHandled, refreshToken, refetch]);
 
   const handleAccept = async (task: DeliveryPartnerTaskSummary): Promise<void> => {
     setListActionError('');
@@ -23,8 +45,8 @@ export default function DeliveryOrdersTab() {
 
     try {
       await acceptTask(task.taskId);
-      setActiveSection('tasks');
-      tasks.refetch();
+      onSectionChange('tasks');
+      refetch();
     } catch (error) {
       setListActionError(getErrorMessage(error, 'Could not accept this order.'));
     } finally {
@@ -32,39 +54,27 @@ export default function DeliveryOrdersTab() {
     }
   };
 
-  const handleComplete = async (taskId: string, file: File): Promise<void> => {
-    setCaptureError('');
-    setActiveTaskId(taskId);
+  const handleFail = async (
+    task: DeliveryPartnerTaskSummary,
+    failureReason: string,
+  ): Promise<void> => {
+    setListActionError('');
+    setActiveTaskId(task.taskId);
 
     try {
-      await completeTask(taskId, file);
-      setSelectedTask(null);
-      tasks.refetch();
+      await failTask(task.taskId, failureReason);
+      refetch();
     } catch (error) {
-      setCaptureError(getErrorMessage(error, 'Could not mark this delivery.'));
+      setListActionError(getErrorMessage(error, 'Could not mark this delivery as failed.'));
+      throw error;
     } finally {
       setActiveTaskId(null);
     }
   };
 
-  if (selectedTask) {
-    return (
-      <DeliveryCaptureView
-        task={selectedTask}
-        isSubmitting={activeTaskId === selectedTask.taskId}
-        error={captureError}
-        onBack={() => {
-          setCaptureError('');
-          setSelectedTask(null);
-        }}
-        onConfirm={handleComplete}
-      />
-    );
-  }
-
   return (
     <div>
-      <DeliveryOrdersPills activeSection={activeSection} onSectionChange={setActiveSection} />
+      <DeliveryOrdersPills activeSection={activeSection} onSectionChange={onSectionChange} />
 
       {activeSection === 'available' ? (
         <DeliveryAvailableSection
@@ -73,7 +83,7 @@ export default function DeliveryOrdersTab() {
           error={tasks.error}
           actionError={listActionError}
           activeTaskId={activeTaskId}
-          onRetry={tasks.refetch}
+          onRetry={refetch}
           onAccept={(task) => {
             void handleAccept(task);
           }}
@@ -85,11 +95,12 @@ export default function DeliveryOrdersTab() {
           error={tasks.error}
           actionError={listActionError}
           activeTaskId={activeTaskId}
-          onRetry={tasks.refetch}
+          onRetry={refetch}
           onDeliver={(task) => {
-            setCaptureError('');
-            setSelectedTask(task);
+            navigate(getDeliveryProofPath(task.taskId), { state: { task } });
           }}
+          onFail={handleFail}
+          onCall={(task) => openTaskDialer(task.customerPhone)}
         />
       )}
     </div>

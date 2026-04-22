@@ -8,10 +8,65 @@ interface UpcomingOrdersSectionProps {
   error: string;
   actionError: string;
   fulfillingOrderId: string | null;
+  approvingOrderId: string | null;
+  rejectingOrderId: string | null;
   onRetry: () => void;
   onViewDetails: (orderId: string) => void;
   onOpenProcurement: () => void;
   onFulfill: (orderId: string) => void;
+  onApprove: (orderId: string) => void;
+  onReject: (orderId: string) => void;
+}
+
+function isToday(deliveryDate: string): boolean {
+  const d = new Date(deliveryDate);
+  const now = new Date();
+  return (
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate()
+  );
+}
+
+function OrderGroup({
+  label,
+  orders,
+  fulfillingOrderId,
+  approvingOrderId,
+  rejectingOrderId,
+  onViewDetails,
+  onFulfill,
+  onApprove,
+  onReject,
+}: {
+  label: string;
+  orders: AdminUpcomingOrder[];
+  fulfillingOrderId: string | null;
+  approvingOrderId: string | null;
+  rejectingOrderId: string | null;
+  onViewDetails: (orderId: string) => void;
+  onFulfill: (orderId: string) => void;
+  onApprove: (orderId: string) => void;
+  onReject: (orderId: string) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="text-xs font-semibold uppercase tracking-wide text-base-content/40">{label}</p>
+      {orders.map((order) => (
+        <UpcomingOrderCard
+          key={order.id}
+          order={order}
+          isSubmitting={fulfillingOrderId === order.id}
+          isApproving={approvingOrderId === order.id}
+          isRejecting={rejectingOrderId === order.id}
+          onViewDetails={onViewDetails}
+          onFulfill={onFulfill}
+          onApprove={onApprove}
+          onReject={onReject}
+        />
+      ))}
+    </div>
+  );
 }
 
 export default function UpcomingOrdersSection({
@@ -20,18 +75,35 @@ export default function UpcomingOrdersSection({
   error,
   actionError,
   fulfillingOrderId,
+  approvingOrderId,
+  rejectingOrderId,
   onRetry,
   onViewDetails,
   onOpenProcurement,
   onFulfill,
+  onApprove,
+  onReject,
 }: UpcomingOrdersSectionProps) {
+  const todayOrders = orders.filter((o) => isToday(o.deliveryDate));
+  const upcomingOrders = orders.filter((o) => !isToday(o.deliveryDate));
+
+  const cardProps = {
+    fulfillingOrderId,
+    approvingOrderId,
+    rejectingOrderId,
+    onViewDetails,
+    onFulfill,
+    onApprove,
+    onReject,
+  };
+
   return (
     <div className="p-4 flex flex-col gap-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h2 className="text-lg font-bold text-base-content">Upcoming Orders</h2>
           <p className="text-sm text-base-content/60">
-            Orders scheduled for the next two days.
+            Today's priority orders and the next two days.
           </p>
         </div>
         <button type="button" className="btn btn-sm btn-neutral" onClick={onOpenProcurement}>
@@ -63,21 +135,18 @@ export default function UpcomingOrdersSection({
             <FiClipboard className="text-base-content/20" size={56} />
             <h3 className="font-semibold text-base-content/70">No upcoming orders</h3>
             <p className="text-sm text-base-content/50">
-              Orders for the next two days will appear here.
+              Orders for today and the next two days will appear here.
             </p>
           </div>
         </div>
       ) : (
-        <div className="flex flex-col gap-3">
-          {orders.map((order) => (
-            <UpcomingOrderCard
-              key={order.id}
-              order={order}
-              isSubmitting={fulfillingOrderId === order.id}
-              onViewDetails={onViewDetails}
-              onFulfill={onFulfill}
-            />
-          ))}
+        <div className="flex flex-col gap-6">
+          {todayOrders.length > 0 && (
+            <OrderGroup label="Today" orders={todayOrders} {...cardProps} />
+          )}
+          {upcomingOrders.length > 0 && (
+            <OrderGroup label="Next Two Days" orders={upcomingOrders} {...cardProps} />
+          )}
         </div>
       )}
     </div>

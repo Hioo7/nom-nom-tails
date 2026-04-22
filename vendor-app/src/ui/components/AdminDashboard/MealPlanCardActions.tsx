@@ -29,7 +29,7 @@ export default function MealPlanCardActions({ onView, onEdit, onDelete }: MealPl
       </button>
       <button
         type="button"
-        className="btn btn-ghost btn-md w-full justify-center gap-2 text-error hover:bg-error/10"
+        className="btn btn-outline btn-md w-full justify-center gap-2"
         onClick={onDelete}
         title="Delete meal plan"
       >

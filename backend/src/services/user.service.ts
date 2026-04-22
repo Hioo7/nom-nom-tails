@@ -45,6 +45,7 @@ class UserService {
         name: data.name,
         email: data.email,
         password: hashedPassword,
+        phone: data.phone,
         role: data.role,
       },
       omit: { password: true },
@@ -64,11 +65,13 @@ class UserService {
       name?: string;
       email?: string;
       password?: string;
+      phone?: string;
       role?: Role;
     } = {};
 
     if (data.name !== undefined) updateData.name = data.name;
     if (data.email !== undefined) updateData.email = data.email;
+    if (data.phone !== undefined) updateData.phone = data.phone;
     if (data.role !== undefined) updateData.role = data.role;
     if (data.password !== undefined) updateData.password = await hash(data.password);
 

@@ -1,7 +1,10 @@
 import { NextFunction, Request, Response } from 'express';
 import AppError from '../lib/AppError';
 import DeliveryPartnerService from '../services/deliveryPartner.service';
-import { parseDeliveryTaskParams } from '../validators/deliveryPartner.validator';
+import {
+  parseDeliveryTaskParams,
+  parseFailDeliveryTaskBody,
+} from '../validators/deliveryPartner.validator';
 
 const deliveryPartnerService = DeliveryPartnerService.getInstance();
 
@@ -70,6 +73,21 @@ export async function completeDeliveryTask(
 
     const params = parseDeliveryTaskParams(req.params as object);
     await deliveryPartnerService.completeTask(params.id, req.user!.id, req.file.buffer);
+    res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function failDeliveryTask(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const params = parseDeliveryTaskParams(req.params);
+    const body = parseFailDeliveryTaskBody(req.body);
+    await deliveryPartnerService.failTask(params.id, req.user!.id, body.failureReason);
     res.status(204).send();
   } catch (err) {
     next(err);

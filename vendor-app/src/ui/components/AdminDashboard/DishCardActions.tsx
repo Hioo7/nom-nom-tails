@@ -7,7 +7,7 @@ interface DishCardActionsProps {
 
 export default function DishCardActions({ onEdit, onDelete }: DishCardActionsProps) {
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-3">
       <button
         type="button"
         className="btn btn-sm btn-outline flex-1"
@@ -19,12 +19,12 @@ export default function DishCardActions({ onEdit, onDelete }: DishCardActionsPro
       </button>
       <button
         type="button"
-        className="btn btn-sm btn-ghost flex-1 text-error hover:bg-error/10"
+        className="btn btn-circle h-10 min-h-0 w-10 shrink-0 border-base-200 bg-base-200 text-base-content/70 shadow-sm hover:bg-base-300"
         onClick={onDelete}
         title="Delete dish"
+        aria-label="Delete dish"
       >
-        <FiTrash2 size={14} />
-        Delete
+        <FiTrash2 size={16} />
       </button>
     </div>
   );

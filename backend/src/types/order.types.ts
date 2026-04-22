@@ -68,6 +68,7 @@ export interface SafeSettlementOrder {
   orderNumber: string;
   customerName: string;
   customerEmail: string;
+  customerPhone: string | null;
   deliveryDate: Date;
   status: SettlementStatus;
   totalAmount: number;

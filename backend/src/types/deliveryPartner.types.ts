@@ -26,26 +26,12 @@ export interface DeliveryPartnerTaskSummary {
   orderId: string;
   orderNumber: string;
   customerName: string;
+  customerPhone: string | null;
   deliveryDate: Date;
   itemCount: number;
   status: DeliveryStatus;
-  timeSlot: DeliveryPartnerTaskTimeSlot;
-}
-
-export interface DeliveryPartnerTaskTimeSlot {
-  id: string;
-  day: string;
-  startTime: string;
-  endTime: string;
-}
-
-export interface DeliveryPartnerTaskSummary {
-  taskId: string;
-  orderId: string;
-  orderNumber: string;
-  customerName: string;
-  deliveryDate: Date;
-  itemCount: number;
-  status: DeliveryStatus;
+  locationLabel: string | null;
+  latitude: number;
+  longitude: number;
   timeSlot: DeliveryPartnerTaskTimeSlot;
 }
