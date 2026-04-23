@@ -1,11 +1,34 @@
 import type { StoredAddress } from '../lib/addressStore';
 import { BASE_URL, authHeaders, handleResponse } from './api';
 
+export interface CurrentLocation {
+  id: string;
+  lat: number;
+  lng: number;
+  displayName: string;
+}
+
 export class AddressService {
   private readonly baseUrl: string;
 
   constructor(baseUrl: string = BASE_URL) {
     this.baseUrl = baseUrl;
+  }
+
+  async getCurrentLocation(token: string): Promise<CurrentLocation | null> {
+    const res = await fetch(`${this.baseUrl}/api/me/addresses/current-location`, {
+      headers: authHeaders(token),
+    });
+    return handleResponse<CurrentLocation | null>(res);
+  }
+
+  async upsertCurrentLocation(token: string, lat: number, lng: number, displayName: string): Promise<CurrentLocation> {
+    const res = await fetch(`${this.baseUrl}/api/me/addresses/current-location`, {
+      method: 'PUT',
+      headers: authHeaders(token),
+      body: JSON.stringify({ lat, lng, displayName }),
+    });
+    return handleResponse<CurrentLocation>(res);
   }
 
   async list(token: string): Promise<StoredAddress[]> {

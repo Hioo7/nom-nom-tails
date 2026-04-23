@@ -114,9 +114,7 @@ export interface UpdateMePayload {
 export interface CreateOrderPayload {
   items: { dishId: string; quantity: number }[];
   deliveryDate: string;
-  address: string;
-  lat?: number;
-  lng?: number;
+  addressId: string;
 }
 
 // ── Context value types ───────────────────────────────────────────────────────

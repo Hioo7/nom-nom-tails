@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import AddressService from '../services/address.service';
-import { CreateAddressSchema, UpdateAddressSchema } from '../schema/address.schema';
+import { CreateAddressSchema, UpdateAddressSchema, UpdateCurrentLocationSchema } from '../schema/address.schema';
 import AppError from '../lib/AppError';
 
 const addressService = AddressService.getInstance();
@@ -9,6 +9,28 @@ export async function listAddresses(req: Request, res: Response, next: NextFunct
   try {
     const addresses = await addressService.listAddresses(req.user!.id);
     res.json({ data: addresses });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getCurrentLocation(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const loc = await addressService.getCurrentLocation(req.user!.id);
+    res.json({ data: loc });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function upsertCurrentLocation(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const parsed = UpdateCurrentLocationSchema.safeParse(req.body);
+    if (!parsed.success) {
+      throw new AppError(400, parsed.error.issues[0].message);
+    }
+    const loc = await addressService.upsertCurrentLocation(req.user!.id, parsed.data);
+    res.json({ data: loc });
   } catch (err) {
     next(err);
   }

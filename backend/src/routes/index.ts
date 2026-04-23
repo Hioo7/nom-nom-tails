@@ -11,6 +11,7 @@ import orderRouter from './order.routes';
 import timeSlotRouter from './timeSlot.routes';
 import deliveryPartnerRouter from './deliveryPartner.routes';
 import customerRouter from './customer.routes';
+import cartRouter from './cart.routes';
 
 const router = Router();
 
@@ -29,5 +30,6 @@ router.use('/orders', orderRouter);
 router.use('/time-slots', timeSlotRouter);
 router.use('/delivery-partners', deliveryPartnerRouter);
 router.use('/customers', customerRouter);
+router.use('/me/cart', cartRouter);
 
 export default router;
