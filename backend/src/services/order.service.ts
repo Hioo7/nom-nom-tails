@@ -75,10 +75,7 @@ interface IngredientAggregation {
   availableQty: number;
 }
 
-const UPCOMING_ORDER_STATUSES: OrderStatus[] = [
-  OrderStatus.PENDING,
-  OrderStatus.CONFIRMED,
-];
+const UPCOMING_ORDER_STATUSES: OrderStatus[] = [OrderStatus.CONFIRMED];
 
 function roundQuantity(value: number): number {
   return Number(value.toFixed(3));
@@ -263,7 +260,7 @@ class OrderService {
       prisma.order.findMany({
         where: {
           deliveryDate: { gte: todayStart, lte: todayEnd },
-          status: { in: [OrderStatus.AWAITING_APPROVAL, OrderStatus.CONFIRMED] },
+          status: { in: UPCOMING_ORDER_STATUSES },
         },
         include,
         orderBy,

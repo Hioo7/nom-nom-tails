@@ -12,6 +12,10 @@ import timeSlotRouter from './timeSlot.routes';
 import deliveryPartnerRouter from './deliveryPartner.routes';
 import customerRouter from './customer.routes';
 import cartRouter from './cart.routes';
+import customerOrderRouter from './customerOrder.routes';
+import customerSubscriptionRouter from './customerSubscription.routes';
+import customerTimeSlotRouter from './customerTimeSlot.routes';
+import subscriptionRouter from './subscription.routes';
 
 const router = Router();
 
@@ -31,5 +35,9 @@ router.use('/time-slots', timeSlotRouter);
 router.use('/delivery-partners', deliveryPartnerRouter);
 router.use('/customers', customerRouter);
 router.use('/me/cart', cartRouter);
+router.use('/customer/orders', customerOrderRouter);
+router.use('/customer/subscriptions', customerSubscriptionRouter);
+router.use('/customer/time-slots', customerTimeSlotRouter);
+router.use('/subscriptions', subscriptionRouter);
 
 export default router;

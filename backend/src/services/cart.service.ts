@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import prisma from '../lib/prisma';
 import AppError from '../lib/AppError';
 import { UpsertCartItemInput, SyncCartInput } from '../schema/cart.schema';
@@ -16,12 +17,14 @@ const DISH_SELECT = {
 class CartService {
   private static instance: CartService;
 
-  static getInstance() {
+  static getInstance(): CartService {
     if (!CartService.instance) CartService.instance = new CartService();
     return CartService.instance;
   }
 
-  async getCart(userId: string) {
+  async getCart(
+    userId: string,
+  ): Promise<Prisma.CartItemGetPayload<{ include: { dish: { select: typeof DISH_SELECT } } }>[]> {
     return prisma.cartItem.findMany({
       where: { userId },
       include: { dish: { select: DISH_SELECT } },
@@ -29,9 +32,13 @@ class CartService {
     });
   }
 
-  async upsertItem(userId: string, input: UpsertCartItemInput) {
+  async upsertItem(
+    userId: string,
+    input: UpsertCartItemInput,
+  ): Promise<Prisma.CartItemGetPayload<{ include: { dish: { select: typeof DISH_SELECT } } }>> {
     const dish = await prisma.dish.findUnique({ where: { id: input.dishId } });
     if (!dish) throw new AppError(404, 'Dish not found');
+    if (!dish.isActive) throw new AppError(400, 'This dish is no longer available');
 
     return prisma.cartItem.upsert({
       where: { userId_dishId: { userId, dishId: input.dishId } },
@@ -41,7 +48,7 @@ class CartService {
     });
   }
 
-  async removeItem(userId: string, dishId: string) {
+  async removeItem(userId: string, dishId: string): Promise<void> {
     const item = await prisma.cartItem.findUnique({
       where: { userId_dishId: { userId, dishId } },
     });
@@ -49,12 +56,14 @@ class CartService {
     await prisma.cartItem.delete({ where: { userId_dishId: { userId, dishId } } });
   }
 
-  async clearCart(userId: string) {
+  async clearCart(userId: string): Promise<void> {
     await prisma.cartItem.deleteMany({ where: { userId } });
   }
 
-  // Bulk sync: replaces entire cart with provided items (used on login to push local cart)
-  async syncCart(userId: string, input: SyncCartInput) {
+  async syncCart(
+    userId: string,
+    input: SyncCartInput,
+  ): Promise<Prisma.CartItemGetPayload<{ include: { dish: { select: typeof DISH_SELECT } } }>[]> {
     await prisma.$transaction(async (tx) => {
       await tx.cartItem.deleteMany({ where: { userId } });
       if (input.items.length > 0) {

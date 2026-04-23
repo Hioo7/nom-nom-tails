@@ -1,7 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
+import { OrderStatus } from '@prisma/client';
 import prisma from '../lib/prisma';
 import { CreateCustomerOrderSchema } from '../schema/customerOrder.schema';
 import AppError from '../lib/AppError';
+
+const JS_DAY_TO_DOW: Record<number, string> = {
+  0: 'SUNDAY', 1: 'MONDAY', 2: 'TUESDAY', 3: 'WEDNESDAY',
+  4: 'THURSDAY', 5: 'FRIDAY', 6: 'SATURDAY',
+};
 
 export async function createOrder(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -12,7 +18,16 @@ export async function createOrder(req: Request, res: Response, next: NextFunctio
       throw new AppError(400, parsed.error.issues[0].message);
     }
 
-    const { items, deliveryDate, addressId } = parsed.data;
+    const { items, deliveryDate, addressId, timeSlotId } = parsed.data;
+
+    // Delivery date must not be in the past
+    const [y, m, d] = deliveryDate.split('-').map(Number);
+    const deliveryDateObj = new Date(y, m - 1, d);
+    const todayMidnight = new Date();
+    todayMidnight.setHours(0, 0, 0, 0);
+    if (deliveryDateObj < todayMidnight) {
+      throw new AppError(400, 'Delivery date cannot be in the past');
+    }
 
     // Verify the address belongs to this customer and is a proper delivery address
     const address = await prisma.address.findUnique({ where: { id: addressId } });
@@ -23,10 +38,27 @@ export async function createOrder(req: Request, res: Response, next: NextFunctio
       throw new AppError(400, 'Please select a saved delivery address, not a GPS location');
     }
 
-    // Pick first active time slot
-    const timeSlot = await prisma.timeSlot.findFirst({ where: { isActive: true } });
-    if (!timeSlot) {
-      throw new AppError(503, 'No delivery time slots available at the moment');
+    // Fetch the customer-selected time slot
+    const timeSlot = await prisma.timeSlot.findUnique({ where: { id: timeSlotId } });
+    if (!timeSlot || !timeSlot.isActive) {
+      throw new AppError(404, 'Time slot not found or unavailable');
+    }
+
+    // Delivery date's day-of-week must match the slot's day
+    if (JS_DAY_TO_DOW[deliveryDateObj.getDay()] !== timeSlot.day) {
+      throw new AppError(400, 'Selected time slot is not available on that delivery date');
+    }
+
+    // Same-day validation: slot must not have started yet
+    let isSameDay = false;
+    if (deliveryDateObj.getTime() === todayMidnight.getTime()) {
+      const [slotH, slotM] = timeSlot.startTime.split(':').map(Number);
+      const slotStart = new Date();
+      slotStart.setHours(slotH, slotM, 0, 0);
+      if (new Date() >= slotStart) {
+        throw new AppError(400, 'This time slot has already passed for today');
+      }
+      isSameDay = true;
     }
 
     // Validate all dishes exist and are active
@@ -40,6 +72,7 @@ export async function createOrder(req: Request, res: Response, next: NextFunctio
       data: {
         customerId,
         timeSlotId: timeSlot.id,
+        status: isSameDay ? OrderStatus.AWAITING_APPROVAL : OrderStatus.CONFIRMED,
         deliveryDate: new Date(deliveryDate),
         deliveryFullName: address.fullName ?? '',
         deliveryPhone: address.phone ?? '',
