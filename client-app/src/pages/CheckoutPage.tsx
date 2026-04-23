@@ -104,8 +104,8 @@ export function CheckoutPage() {
   const [showAllAddresses, setShowAllAddresses] = useState(false);
   const [detectingGps, setDetectingGps] = useState(false);
 
-  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
-  const [slotsLoading, setSlotsLoading] = useState(true);
+  const [timeSlots, setTimeSlots] = useState<TimeSlot[] | null>(null);
+  const slotsLoading = !!token && timeSlots === null;
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -116,12 +116,13 @@ export function CheckoutPage() {
 
   useEffect(() => {
     if (!token) return;
-    setSlotsLoading(true);
     timeSlotService
       .listActive(token)
       .then(setTimeSlots)
-      .catch(() => setError('Failed to load delivery slots. Please refresh.'))
-      .finally(() => setSlotsLoading(false));
+      .catch(() => {
+        setTimeSlots([]);
+        setError('Failed to load delivery slots. Please refresh.');
+      });
   }, [token]);
 
   // Auto-select first address; allow manual override
@@ -193,7 +194,7 @@ export function CheckoutPage() {
       return;
     }
 
-    const slot = timeSlots.find((s) => s.id === selectedSlotId)!;
+    const slot = (timeSlots ?? []).find((s) => s.id === selectedSlotId)!;
     const deliveryDate = nextDateForDay(slot.day);
 
     setError('');
@@ -448,12 +449,12 @@ export function CheckoutPage() {
           <div className="flex items-center justify-center py-4 gap-2 text-gray-400 text-sm px-4">
             <FiLoader size={14} className="animate-spin" /> Loading slots…
           </div>
-        ) : timeSlots.length === 0 ? (
+        ) : (timeSlots ?? []).length === 0 ? (
           <p className="text-xs text-gray-400 text-center py-2 px-4">No delivery slots available right now.</p>
         ) : (
           <div className="flex gap-3 overflow-x-auto px-4 pb-1 scrollbar-hide"
                style={{ scrollSnapType: 'x mandatory' }}>
-            {[...timeSlots]
+            {[...(timeSlots ?? [])]
               .sort((a, b) => {
                 const aDisabled = !a.isActive || daysUntilNext(a.day) < MIN_DAYS_AHEAD;
                 const bDisabled = !b.isActive || daysUntilNext(b.day) < MIN_DAYS_AHEAD;
