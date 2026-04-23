@@ -1,14 +1,19 @@
 import { Router } from 'express';
-import { createOrder, listMyOrders } from '../controllers/customerOrder.controller';
+import { Role } from '@prisma/client';
+import { createOrder, listMyOrders, listActiveTimeSlots } from '../controllers/customerOrder.controller';
+import { createSubscription, listMySubscriptions } from '../controllers/subscription.controller';
 import { authenticate } from '../middleware/authenticate';
 import { requireRole } from '../middleware/requireRole';
 
 const router = Router();
 
 router.use(authenticate);
-router.use(requireRole('CUSTOMER'));
+router.use(requireRole(Role.CUSTOMER));
 
-router.post('/', createOrder);
-router.get('/', listMyOrders);
+router.get('/timeslots', listActiveTimeSlots);
+router.post('/orders', createOrder);
+router.get('/orders', listMyOrders);
+router.post('/subscriptions', createSubscription);
+router.get('/subscriptions', listMySubscriptions);
 
 export default router;

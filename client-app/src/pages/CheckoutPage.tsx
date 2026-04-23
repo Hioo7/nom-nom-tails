@@ -1,12 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  FiArrowLeft, FiMapPin, FiCalendar, FiCheck,
+  FiArrowLeft, FiMapPin, FiClock, FiCheck,
   FiPlus, FiHome, FiBriefcase, FiChevronDown, FiChevronUp, FiNavigation, FiLoader,
 } from 'react-icons/fi';
 import { useCart } from '../hooks/useCart';
 import { useAuth } from '../hooks/useAuth';
 import { OrderService } from '../services/order.service';
+import { TimeSlotService } from '../services/timeslot.service';
+import type { TimeSlot } from '../types';
 import {
   formatAddress,
   type StoredAddress,
@@ -14,6 +16,34 @@ import {
 } from '../lib/addressStore';
 import { useAddresses } from '../hooks/useAddresses';
 import { reverseGeocode } from '../hooks/useGpsLocation';
+
+const DAY_LABEL: Record<string, string> = {
+  MONDAY: 'Mon', TUESDAY: 'Tue', WEDNESDAY: 'Wed',
+  THURSDAY: 'Thu', FRIDAY: 'Fri', SATURDAY: 'Sat', SUNDAY: 'Sun',
+};
+
+const DAY_INDEX: Record<string, number> = {
+  SUNDAY: 0, MONDAY: 1, TUESDAY: 2, WEDNESDAY: 3,
+  THURSDAY: 4, FRIDAY: 5, SATURDAY: 6,
+};
+
+const MIN_DAYS_AHEAD = 2;
+
+// Returns days until next occurrence of a given day-of-week (never 0 = today)
+function daysUntilNext(day: string): number {
+  const target = DAY_INDEX[day];
+  const todayIdx = new Date().getDay();
+  return ((target - todayIdx + 7) % 7) || 7;
+}
+
+// Returns the next calendar date (YYYY-MM-DD) for a given day-of-week
+function nextDateForDay(day: string): string {
+  const result = new Date();
+  result.setDate(result.getDate() + daysUntilNext(day));
+  return result.toISOString().split('T')[0];
+}
+
+const timeSlotService = new TimeSlotService();
 
 const orderService = new OrderService();
 
@@ -74,14 +104,26 @@ export function CheckoutPage() {
   const [showAllAddresses, setShowAllAddresses] = useState(false);
   const [detectingGps, setDetectingGps] = useState(false);
 
-  const [deliveryDate, setDeliveryDate] = useState('');
+  const [timeSlots, setTimeSlots] = useState<TimeSlot[] | null>(null);
+  const slotsLoading = !!token && timeSlots === null;
+  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [orderId, setOrderId] = useState('');
 
   const deliveryFee = 40;
   const grandTotal = totalPrice + deliveryFee;
-  const today = new Date().toISOString().split('T')[0];
+
+  useEffect(() => {
+    if (!token) return;
+    timeSlotService
+      .listActive(token)
+      .then(setTimeSlots)
+      .catch(() => {
+        setTimeSlots([]);
+        setError('Failed to load delivery slots. Please refresh.');
+      });
+  }, [token]);
 
   // Auto-select first address; allow manual override
   const effectiveSelectedId = selectedId ?? addresses[0]?.id ?? null;
@@ -143,14 +185,17 @@ export function CheckoutPage() {
       setError('Please select or add a delivery address.');
       return;
     }
-    if (!deliveryDate) {
-      setError('Please select a delivery date.');
+    if (!selectedSlotId) {
+      setError('Please select a delivery time slot.');
       return;
     }
     if (!token) {
       navigate('/login');
       return;
     }
+
+    const slot = (timeSlots ?? []).find((s) => s.id === selectedSlotId)!;
+    const deliveryDate = nextDateForDay(slot.day);
 
     setError('');
     setLoading(true);
@@ -159,6 +204,7 @@ export function CheckoutPage() {
         items: items.map((i) => ({ dishId: i.dish.id, quantity: i.quantity })),
         deliveryDate,
         addressId: selected.id,
+        timeSlotId: selectedSlotId,
       });
       setOrderId(order.id);
       clearCart();
@@ -393,18 +439,92 @@ export function CheckoutPage() {
         </div>
       </div>
 
-      {/* Delivery Date */}
-      <div className="bg-white rounded-2xl p-4 shadow-sm mb-4">
-        <label className="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-2">
-          <FiCalendar size={15} className="text-orange-500" /> Delivery Date
-        </label>
-        <input
-          type="date"
-          value={deliveryDate}
-          min={today}
-          onChange={(e) => setDeliveryDate(e.target.value)}
-          className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-orange-400 transition-colors mt-1"
-        />
+      {/* Delivery Time Slot */}
+      <div className="bg-white rounded-2xl pt-4 pb-3 shadow-sm mb-4">
+        <h3 className="text-sm font-semibold text-gray-800 mb-3 px-4 flex items-center gap-2">
+          <FiClock size={15} className="text-orange-500" /> Delivery Time Slot
+        </h3>
+
+        {slotsLoading ? (
+          <div className="flex items-center justify-center py-4 gap-2 text-gray-400 text-sm px-4">
+            <FiLoader size={14} className="animate-spin" /> Loading slots…
+          </div>
+        ) : (timeSlots ?? []).length === 0 ? (
+          <p className="text-xs text-gray-400 text-center py-2 px-4">No delivery slots available right now.</p>
+        ) : (
+          <div className="flex gap-3 overflow-x-auto px-4 pb-1 scrollbar-hide"
+               style={{ scrollSnapType: 'x mandatory' }}>
+            {[...(timeSlots ?? [])]
+              .sort((a, b) => {
+                const aDisabled = !a.isActive || daysUntilNext(a.day) < MIN_DAYS_AHEAD;
+                const bDisabled = !b.isActive || daysUntilNext(b.day) < MIN_DAYS_AHEAD;
+                if (aDisabled !== bDisabled) return aDisabled ? 1 : -1;
+                return daysUntilNext(a.day) - daysUntilNext(b.day);
+              })
+              .map((slot) => {
+                const days = daysUntilNext(slot.day);
+                const tooSoon = days < MIN_DAYS_AHEAD;
+                const disabled = !slot.isActive || tooSoon;
+                const isSelected = slot.id === selectedSlotId && !disabled;
+                const date = nextDateForDay(slot.day);
+                const dateFormatted = new Date(date + 'T00:00:00').toLocaleDateString('en-IN', {
+                  day: 'numeric', month: 'short',
+                });
+
+                return (
+                  <button
+                    key={slot.id}
+                    disabled={disabled}
+                    onClick={() => !disabled && setSelectedSlotId(slot.id)}
+                    style={{ scrollSnapAlign: 'start', minWidth: '110px' }}
+                    className={`flex-shrink-0 flex flex-col items-center justify-center gap-1 rounded-2xl px-3 py-3 border-2 transition-all relative ${
+                      disabled
+                        ? 'border-gray-100 bg-gray-50 opacity-40 cursor-not-allowed'
+                        : isSelected
+                        ? 'border-orange-400 bg-orange-50 shadow-sm'
+                        : 'border-gray-100 bg-white hover:border-orange-200'
+                    }`}
+                  >
+                    {/* Selected tick */}
+                    {isSelected && (
+                      <div className="absolute -top-2 -right-2 w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center shadow">
+                        <FiCheck size={10} className="text-white" strokeWidth={3} />
+                      </div>
+                    )}
+
+                    {/* Day */}
+                    <span className={`text-base font-bold leading-none ${disabled ? 'text-gray-400' : isSelected ? 'text-orange-500' : 'text-gray-800'}`}>
+                      {DAY_LABEL[slot.day]}
+                    </span>
+
+                    {/* Date */}
+                    <span className={`text-xs font-medium ${disabled ? 'text-gray-300' : 'text-gray-500'}`}>
+                      {dateFormatted}
+                    </span>
+
+                    {/* Divider */}
+                    <div className={`w-8 h-px my-0.5 ${disabled ? 'bg-gray-200' : isSelected ? 'bg-orange-300' : 'bg-gray-200'}`} />
+
+                    {/* Time */}
+                    <span className={`text-xs font-semibold text-center leading-tight ${disabled ? 'text-gray-300' : isSelected ? 'text-orange-600' : 'text-gray-600'}`}>
+                      {slot.startTime}
+                    </span>
+                    <span className={`text-xs ${disabled ? 'text-gray-300' : 'text-gray-400'}`}>
+                      to {slot.endTime}
+                    </span>
+
+                    {/* Status badge */}
+                    {!slot.isActive && (
+                      <span className="mt-1 text-[10px] text-red-400 font-medium leading-none">Off</span>
+                    )}
+                    {slot.isActive && tooSoon && (
+                      <span className="mt-1 text-[10px] text-gray-400 font-medium leading-none">Soon</span>
+                    )}
+                  </button>
+                );
+              })}
+          </div>
+        )}
       </div>
 
       {/* Payment note */}

@@ -37,7 +37,7 @@ router.use('/time-slots', timeSlotRouter);
 router.use('/delivery-partners', deliveryPartnerRouter);
 router.use('/customers', customerRouter);
 router.use('/me/cart', cartRouter);
-router.use('/customer/orders', customerOrderRouter);
+router.use('/customer', customerOrderRouter);
 router.use('/customer/subscriptions', customerSubscriptionRouter);
 router.use('/customer/time-slots', customerTimeSlotRouter);
 router.use('/subscriptions', subscriptionRouter);

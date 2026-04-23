@@ -3,8 +3,9 @@ import { z } from 'zod';
 export const CreateSubscriptionSchema = z.object({
   mealPlanId: z.string().min(1, 'Meal plan is required'),
   timeSlotId: z.string().min(1, 'Time slot is required'),
-  addressId: z.string().min(1, 'Delivery address is required'),
+  addressId: z.string().optional(),
   startDate: z.string().min(1, 'Start date is required'),
+  endDate: z.string().optional(),
   isAutoRenew: z.boolean().default(false),
 });
 
