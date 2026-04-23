@@ -1,36 +1,63 @@
-import { useState } from 'react';
 import { usePWAInstall } from '../../hooks/usePWAInstall';
 
-export function InstallBanner() {
-  const { canInstall, install } = usePWAInstall();
-  const [dismissed, setDismissed] = useState(false);
+interface Props {
+  open: boolean;
+  onClose: () => void;
+}
 
-  const isDev = import.meta.env.DEV;
-  if ((!canInstall && !isDev) || dismissed) return null;
+export function InstallBanner({ open, onClose }: Props) {
+  const { install } = usePWAInstall();
+
+  if (!open) return null;
+
+  const handleInstall = async () => {
+    await install();
+    onClose();
+  };
 
   return (
-    <div className="fixed bottom-20 left-0 right-0 z-50 px-4">
-      <div className="bg-white rounded-2xl shadow-lg border border-orange-100 p-4 flex items-center gap-3">
-        <img src="/nomnomlogo_192.png" alt="Nom Nom Tails" className="w-12 h-12 rounded-xl flex-shrink-0" />
-        <div className="flex-1 min-w-0">
-          <p className="font-semibold text-gray-800 text-sm">Install Nom Nom Tails</p>
-          <p className="text-gray-500 text-xs truncate">Add to home screen for a better experience</p>
-        </div>
-        <div className="flex gap-2 flex-shrink-0">
-          <button
-            onClick={() => setDismissed(true)}
-            className="text-gray-400 text-xs px-2 py-1 hover:text-gray-600"
-          >
-            Not now
-          </button>
-          <button
-            onClick={install}
-            className="bg-orange-400 hover:bg-orange-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg"
-          >
-            Install
-          </button>
+    <>
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 z-40 bg-black/20"
+        onClick={onClose}
+      />
+
+      {/* Popup */}
+      <div className="fixed bottom-24 right-4 z-50 w-72">
+        <div className="bg-white rounded-2xl shadow-xl border border-orange-100 p-4">
+          <div className="flex items-center gap-3 mb-3">
+            <img
+              src="/nomnomlogo_192.png"
+              alt="Nom Nom Tails"
+              className="w-12 h-12 rounded-xl flex-shrink-0"
+            />
+            <div>
+              <p className="font-bold text-gray-800 text-sm">Nom Nom Tails</p>
+              <p className="text-gray-400 text-xs">Add to your home screen</p>
+            </div>
+          </div>
+
+          <p className="text-gray-500 text-xs mb-4 leading-relaxed">
+            Install the app for a faster, native-like experience — works offline too!
+          </p>
+
+          <div className="flex gap-2">
+            <button
+              onClick={onClose}
+              className="flex-1 border border-gray-200 text-gray-500 text-sm font-medium py-2 rounded-xl hover:bg-gray-50 transition-colors"
+            >
+              Not now
+            </button>
+            <button
+              onClick={handleInstall}
+              className="flex-1 bg-orange-400 hover:bg-orange-500 text-white text-sm font-semibold py-2 rounded-xl transition-colors"
+            >
+              Install
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

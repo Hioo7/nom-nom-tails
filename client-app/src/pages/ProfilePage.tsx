@@ -14,13 +14,18 @@ import {
   FiBell,
   FiLogOut,
   FiChevronRight,
+  FiDownload,
 } from 'react-icons/fi';
 import { useAuth } from '../hooks/useAuth';
+import { usePWAInstall } from '../hooks/usePWAInstall';
+import { InstallBanner } from '../components/ui/InstallBanner';
 
 export function ProfilePage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [confirmLogout, setConfirmLogout] = useState(false);
+  const { canInstall } = usePWAInstall();
+  const [showInstall, setShowInstall] = useState(false);
 
   if (!user) {
     return (
@@ -95,6 +100,7 @@ export function ProfilePage() {
     { icon: <FiMapPin size={18} />, label: 'Shipping Address', action: () => navigate('/profile/address') },
     { icon: <FiBell size={18} />, label: 'Notifications', action: () => navigate('/profile/notifications') },
     { icon: <FiSettings size={18} />, label: 'Settings', action: () => navigate('/profile/settings') },
+    ...(canInstall ? [{ icon: <FiDownload size={18} />, label: 'Install App', action: () => setShowInstall(true) }] : []),
   ];
 
   return (
@@ -209,6 +215,8 @@ export function ProfilePage() {
           </div>
         )}
       </div>
+
+      <InstallBanner open={showInstall} onClose={() => setShowInstall(false)} />
     </div>
   );
 }

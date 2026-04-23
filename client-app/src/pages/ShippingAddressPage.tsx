@@ -126,7 +126,7 @@ export function ShippingAddressPage() {
 
   const handleEdit = (a: StoredAddress) => {
     setEditingId(a.id);
-    setForm({ type: a.type, fullName: a.fullName, phone: a.phone, line1: a.line1, line2: a.line2 ?? '', city: a.city, state: a.state, pin: a.pin });
+    setForm({ type: a.type, fullName: a.fullName, phone: a.phone, line1: a.line1, line2: a.line2 ?? '', city: a.city, state: a.state, pin: a.pin, lat: a.lat ?? null, lng: a.lng ?? null });
     setErrors({});
     setSavedId(null);
     setShowForm(true);

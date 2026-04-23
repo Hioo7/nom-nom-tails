@@ -4,17 +4,20 @@ import { FiStar } from 'react-icons/fi';
 import { MealPlanCard } from '../components/ui/MealPlanCard';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { MealPlanService } from '../services/mealPlan.service';
+import { SubscriptionService } from '../services/subscription.service';
 import { useAuth } from '../hooks/useAuth';
 import type { MealPlan } from '../types';
 
-const mealPlanService = new MealPlanService();
+const mealPlanService     = new MealPlanService();
+const subscriptionService = new SubscriptionService();
 
 export function PremiumPage() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const navigate = useNavigate();
-  const [plans, setPlans] = useState<MealPlan[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [plans, setPlans]                     = useState<MealPlan[]>([]);
+  const [subscribedIds, setSubscribedIds]     = useState<Set<string>>(new Set());
+  const [loading, setLoading]                 = useState(true);
+  const [error, setError]                     = useState('');
 
   useEffect(() => {
     mealPlanService
@@ -24,13 +27,26 @@ export function PremiumPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  // Fetch active subscriptions to mark already-subscribed plans
+  useEffect(() => {
+    if (!token) return;
+    subscriptionService
+      .listMine(token)
+      .then((subs) => {
+        const activeIds = new Set(
+          subs.filter((s) => s.status === 'ACTIVE').map((s) => s.mealPlanId)
+        );
+        setSubscribedIds(activeIds);
+      })
+      .catch(() => {});
+  }, [token]);
+
   const handleSubscribe = (plan: MealPlan) => {
-    if (!user) {
+    if (!user || !token) {
       navigate('/login', { state: { from: '/premium' } });
       return;
     }
-    // TODO: subscription checkout flow
-    alert(`Subscription for "${plan.name}" coming soon!`);
+    navigate('/subscription-checkout', { state: { plan } });
   };
 
   return (
@@ -52,9 +68,7 @@ export function PremiumPage() {
         <p className="font-bold text-base mb-1">Why subscribe?</p>
         <div className="grid grid-cols-3 gap-2 text-center text-xs mt-2">
           {['Save up to 20%', 'Daily delivery', 'Auto-renewal'].map((perk) => (
-            <div key={perk} className="bg-white/20 rounded-xl py-2 px-1">
-              {perk}
-            </div>
+            <div key={perk} className="bg-white/20 rounded-xl py-2 px-1">{perk}</div>
           ))}
         </div>
       </div>
@@ -73,9 +87,14 @@ export function PremiumPage() {
           <p className="text-gray-500">No meal plans available yet. Check back soon!</p>
         </div>
       ) : (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 pb-8">
           {plans.map((plan) => (
-            <MealPlanCard key={plan.id} plan={plan} onSubscribe={handleSubscribe} />
+            <MealPlanCard
+              key={plan.id}
+              plan={plan}
+              isSubscribed={subscribedIds.has(plan.id)}
+              onSubscribe={handleSubscribe}
+            />
           ))}
         </div>
       )}

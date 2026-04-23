@@ -111,10 +111,42 @@ export interface UpdateMePayload {
   newPassword?: string;
 }
 
+export type DayOfWeek = 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY' | 'SUNDAY';
+
+export interface TimeSlot {
+  id: string;
+  day: DayOfWeek;
+  startTime: string;
+  endTime: string;
+  isActive: boolean;
+}
+
+export interface Subscription {
+  id: string;
+  mealPlanId: string;
+  timeSlotId: string;
+  startDate: string;
+  endDate: string;
+  isAutoRenew: boolean;
+  status: 'ACTIVE' | 'EXPIRED' | 'CANCELLED';
+  mealPlan: MealPlan;
+  timeSlot: TimeSlot;
+  createdAt: string;
+}
+
+export interface CreateSubscriptionPayload {
+  mealPlanId: string;
+  timeSlotId: string;
+  startDate: string;
+  endDate: string;
+  isAutoRenew: boolean;
+}
+
 export interface CreateOrderPayload {
   items: { dishId: string; quantity: number }[];
   deliveryDate: string;
   addressId: string;
+  timeSlotId: string;
 }
 
 // ── Context value types ───────────────────────────────────────────────────────

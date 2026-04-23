@@ -21,54 +21,69 @@ function saveLocalCart(items: CartItem[]) {
   localStorage.setItem(CART_KEY, JSON.stringify(items));
 }
 
+function clearLocalCart() {
+  localStorage.removeItem(CART_KEY);
+}
+
 export function CartProvider({ children }: { children: ReactNode }) {
   const { token } = useAuth();
-  const [items, setItems] = useState<CartItem[]>(loadLocalCart);
-  // track previous token to detect login event
-  const prevTokenRef = useRef<string | null>(null);
 
-  // Whenever items change, keep localStorage in sync (works for both guest and logged-in)
+  // Start with localStorage only if not logged in yet
+  const [items, setItems] = useState<CartItem[]>(() =>
+    token ? [] : loadLocalCart()
+  );
+
+  const prevTokenRef = useRef<string | null | undefined>(undefined);
+
+  // Only persist to localStorage when guest (no token)
   useEffect(() => {
-    saveLocalCart(items);
-  }, [items]);
+    if (!token) saveLocalCart(items);
+  }, [items, token]);
 
-  // On token change: if user just logged in, sync local cart to DB then load DB cart
   useEffect(() => {
     const prev = prevTokenRef.current;
     prevTokenRef.current = token;
 
+    // ── Logout: token removed ──────────────────────────────────────────
+    if (prev !== undefined && prev !== null && !token) {
+      setItems([]);
+      clearLocalCart();
+      return;
+    }
+
     if (!token) return;
 
-    const localItems = loadLocalCart();
+    // ── Login: guest → authenticated ───────────────────────────────────
+    if (prev === null || prev === undefined) {
+      const localItems = loadLocalCart();
 
-    if (prev === null && localItems.length > 0) {
-      // User just logged in and had guest cart items — push them to DB first
-      cartService
-        .syncCart(
-          token,
-          localItems.map((i) => ({ dishId: i.dish.id, quantity: i.quantity })),
-        )
-        .then((apiItems) => {
-          const merged = CartService.toCartItems(apiItems);
-          setItems(merged);
-          saveLocalCart(merged);
-        })
-        .catch(() => {
-          // Sync failed — just load DB cart
-          loadDbCart(token);
-        });
-    } else {
-      // Page refresh with existing token — load from DB as source of truth
-      loadDbCart(token);
+      if (localItems.length > 0) {
+        // Push guest cart into DB then clear localStorage
+        cartService
+          .syncCart(
+            token,
+            localItems.map((i) => ({ dishId: i.dish.id, quantity: i.quantity })),
+          )
+          .then((apiItems) => {
+            setItems(CartService.toCartItems(apiItems));
+            clearLocalCart(); // ← DB is now source of truth, no need for localStorage
+          })
+          .catch(() => loadDbCart(token));
+      } else {
+        loadDbCart(token);
+      }
+      return;
     }
+
+    // ── Page refresh while logged in ───────────────────────────────────
+    loadDbCart(token);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   function loadDbCart(tok: string) {
     cartService.getCart(tok).then((apiItems) => {
-      const dbItems = CartService.toCartItems(apiItems);
-      setItems(dbItems);
-      saveLocalCart(dbItems);
+      setItems(CartService.toCartItems(apiItems));
+      clearLocalCart(); // DB is source of truth — no localStorage needed
     });
   }
 
@@ -80,7 +95,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
           ? prev.map((i) => (i.dish.id === dish.id ? { ...i, quantity: i.quantity + 1 } : i))
           : [...prev, { dish, quantity: 1 }];
 
-        // Background DB sync
         if (token) {
           const newQty = existing ? existing.quantity + 1 : 1;
           cartService.upsertItem(token, dish.id, newQty).catch(() => {});
@@ -104,10 +118,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const updateQuantity = useCallback(
     (dishId: string, quantity: number) => {
-      if (quantity <= 0) {
-        removeItem(dishId);
-        return;
-      }
+      if (quantity <= 0) { removeItem(dishId); return; }
       setItems((prev) => {
         if (token) cartService.upsertItem(token, dishId, quantity).catch(() => {});
         return prev.map((i) => (i.dish.id === dishId ? { ...i, quantity } : i));
@@ -119,6 +130,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const clearCart = useCallback(() => {
     setItems([]);
     if (token) cartService.clearCart(token).catch(() => {});
+    else clearLocalCart();
   }, [token]);
 
   const totalItems = items.reduce((sum, i) => sum + i.quantity, 0);

@@ -15,6 +15,7 @@ import { EditProfilePage } from './pages/EditProfilePage';
 import { ShippingAddressPage } from './pages/ShippingAddressPage';
 import { NotificationsPage } from './pages/NotificationsPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { SubscriptionCheckoutPage } from './pages/SubscriptionCheckoutPage';
 
 export default function App() {
   return (
@@ -33,6 +34,7 @@ export default function App() {
               <Route path="/profile/address" element={<ShippingAddressPage />} />
               <Route path="/profile/notifications" element={<NotificationsPage />} />
               <Route path="/profile/settings" element={<SettingsPage />} />
+              <Route path="/subscription-checkout" element={<SubscriptionCheckoutPage />} />
 
               {/* Main app with bottom nav */}
               <Route element={<AppLayout />}>

@@ -9,6 +9,17 @@ const JS_DAY_TO_DOW: Record<number, string> = {
   4: 'THURSDAY', 5: 'FRIDAY', 6: 'SATURDAY',
 };
 
+export async function listActiveTimeSlots(_req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const slots = await prisma.timeSlot.findMany({
+      orderBy: [{ day: 'asc' }, { startTime: 'asc' }],
+    });
+    res.json({ data: slots });
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function createOrder(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const customerId = req.user!.id;
