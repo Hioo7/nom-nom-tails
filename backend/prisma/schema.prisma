@@ -77,10 +77,13 @@ model User {
   role          Role           @default(CUSTOMER)
   isActive      Boolean        @default(true)
   isLoyalty     Boolean        @default(false)
+  lat           Float?
+  lng           Float?
   orders        Order[]
   subscriptions Subscription[]
   deliveryTasks DeliveryTask[]
   addresses     Address[]
+  cartItems     CartItem[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 }
@@ -129,8 +132,24 @@ model Dish {
   ingredients    DishIngredient[]
   orderItems     OrderItem[]
   mealPlanDishes MealPlanDish[]
+  cartItems      CartItem[]
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
+}
+
+// ─── CartItem ──────────────────────────────────────────────────────────────────
+
+model CartItem {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  dish      Dish     @relation(fields: [dishId], references: [id])
+  dishId    String
+  quantity  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, dishId])
 }
 
 model DishIngredient {

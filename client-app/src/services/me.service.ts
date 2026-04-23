@@ -4,6 +4,7 @@ import { BASE_URL, authHeaders, handleResponse } from './api';
 export interface IMeService {
   getMe(token: string): Promise<SafeUser>;
   updateMe(token: string, payload: UpdateMePayload): Promise<SafeUser>;
+  updateLocation(token: string, lat: number, lng: number): Promise<SafeUser>;
 }
 
 export class MeService implements IMeService {
@@ -25,6 +26,15 @@ export class MeService implements IMeService {
       method: 'PATCH',
       headers: authHeaders(token),
       body: JSON.stringify(payload),
+    });
+    return handleResponse<SafeUser>(res);
+  }
+
+  async updateLocation(token: string, lat: number, lng: number): Promise<SafeUser> {
+    const res = await fetch(`${this.baseUrl}/api/me/location`, {
+      method: 'PATCH',
+      headers: authHeaders(token),
+      body: JSON.stringify({ lat, lng }),
     });
     return handleResponse<SafeUser>(res);
   }

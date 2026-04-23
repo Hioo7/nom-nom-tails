@@ -1,5 +1,12 @@
 import { z } from 'zod';
 
+export const UpdateLocationSchema = z.object({
+  lat: z.number().min(-90).max(90),
+  lng: z.number().min(-180).max(180),
+});
+
+export type UpdateLocationInput = z.infer<typeof UpdateLocationSchema>;
+
 export const UpdateMeSchema = z
   .object({
     name: z.string().trim().min(1, 'Name is required').optional(),
