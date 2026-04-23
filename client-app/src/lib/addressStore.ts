@@ -12,6 +12,8 @@ export interface StoredAddress {
   city: string;
   state: string;
   pin: string;
+  lat?: number | null;
+  lng?: number | null;
 }
 
 export function getAddresses(): StoredAddress[] {

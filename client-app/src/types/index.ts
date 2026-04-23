@@ -7,8 +7,6 @@ export interface SafeUser {
   role: Role;
   isActive: boolean;
   isLoyalty: boolean;
-  lat: number | null;
-  lng: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -116,9 +114,7 @@ export interface UpdateMePayload {
 export interface CreateOrderPayload {
   items: { dishId: string; quantity: number }[];
   deliveryDate: string;
-  address: string;
-  lat?: number;
-  lng?: number;
+  addressId: string;
 }
 
 // ── Context value types ───────────────────────────────────────────────────────

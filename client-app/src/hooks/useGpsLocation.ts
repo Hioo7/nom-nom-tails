@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { MeService } from '../services/me.service';
+import { AddressService } from '../services/address.service';
 
 export type LocationStatus = 'idle' | 'loading' | 'granted' | 'denied' | 'unavailable';
 
@@ -10,7 +10,7 @@ export interface GpsLocation {
 }
 
 const LOCATION_KEY = 'nom_nom_location';
-const meService = new MeService();
+const addressService = new AddressService();
 
 export async function reverseGeocode(lat: number, lng: number): Promise<string> {
   const res = await fetch(
@@ -43,36 +43,37 @@ function saveToStorage(loc: GpsLocation) {
   localStorage.setItem(LOCATION_KEY, JSON.stringify(loc));
 }
 
-export function useGpsLocation(
-  token: string | null,
-  userLat?: number | null,
-  userLng?: number | null,
-) {
+export function useGpsLocation(token: string | null) {
   const [status, setStatus] = useState<LocationStatus>(() =>
     readFromStorage() ? 'granted' : 'idle',
   );
   const [location, setLocation] = useState<GpsLocation | null>(() => readFromStorage());
   const [error, setError] = useState<string | null>(null);
 
-  // On mount: if no localStorage but user has saved coords, reverse-geocode them
+  // On login: restore from DB if localStorage is empty
   useEffect(() => {
-    if (location || !userLat || !userLng) return;
-    reverseGeocode(userLat, userLng).then((address) => {
-      const loc: GpsLocation = { lat: userLat, lng: userLng, address };
-      setLocation(loc);
-      setStatus('granted');
-      saveToStorage(loc);
-    });
+    if (!token || location) return;
+    addressService.getCurrentLocation(token).then((loc) => {
+      if (loc && loc.lat && loc.lng) {
+        const gps: GpsLocation = { lat: loc.lat, lng: loc.lng, address: loc.displayName };
+        setLocation(gps);
+        setStatus('granted');
+        saveToStorage(gps);
+      }
+    }).catch(() => {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userLat, userLng]);
+  }, [token]);
 
   const _persist = useCallback(
-    async (loc: GpsLocation) => {
+    (loc: GpsLocation) => {
       setLocation(loc);
       setStatus('granted');
       saveToStorage(loc);
+      // Save to address table in DB (non-blocking)
       if (token) {
-        await meService.updateLocation(token, loc.lat, loc.lng).catch(() => {});
+        addressService
+          .upsertCurrentLocation(token, loc.lat, loc.lng, loc.address)
+          .catch(() => {});
       }
     },
     [token],
@@ -91,9 +92,9 @@ export function useGpsLocation(
         const { latitude: lat, longitude: lng } = pos.coords;
         try {
           const address = await reverseGeocode(lat, lng);
-          await _persist({ lat, lng, address });
+          _persist({ lat, lng, address });
         } catch {
-          await _persist({ lat, lng, address: `${lat.toFixed(4)}, ${lng.toFixed(4)}` });
+          _persist({ lat, lng, address: `${lat.toFixed(4)}, ${lng.toFixed(4)}` });
         }
       },
       (err) => {
@@ -110,8 +111,8 @@ export function useGpsLocation(
   }, [_persist]);
 
   const setManualLocation = useCallback(
-    async (lat: number, lng: number, address: string) => {
-      await _persist({ lat, lng, address });
+    (lat: number, lng: number, address: string) => {
+      _persist({ lat, lng, address });
     },
     [_persist],
   );

@@ -14,10 +14,13 @@ export async function createOrder(req: Request, res: Response, next: NextFunctio
 
     const { items, deliveryDate, addressId } = parsed.data;
 
-    // Verify the address belongs to this customer
+    // Verify the address belongs to this customer and is a proper delivery address
     const address = await prisma.address.findUnique({ where: { id: addressId } });
     if (!address || address.userId !== customerId) {
       throw new AppError(404, 'Address not found');
+    }
+    if (address.isCurrentLocation) {
+      throw new AppError(400, 'Please select a saved delivery address, not a GPS location');
     }
 
     // Pick first active time slot
@@ -38,15 +41,15 @@ export async function createOrder(req: Request, res: Response, next: NextFunctio
         customerId,
         timeSlotId: timeSlot.id,
         deliveryDate: new Date(deliveryDate),
-        deliveryFullName: address.fullName,
-        deliveryPhone: address.phone,
-        deliveryLine1: address.line1,
-        deliveryLine2: address.line2,
-        deliveryCity: address.city,
-        deliveryState: address.state,
-        deliveryPin: address.pin,
-        deliveryLat: address.lat,
-        deliveryLng: address.lng,
+        deliveryFullName: address.fullName ?? '',
+        deliveryPhone: address.phone ?? '',
+        deliveryLine1: address.line1 ?? '',
+        deliveryLine2: address.line2 ?? null,
+        deliveryCity: address.city ?? '',
+        deliveryState: address.state ?? '',
+        deliveryPin: address.pin ?? '',
+        deliveryLat: address.lat ?? null,
+        deliveryLng: address.lng ?? null,
         deliveryAddressType: address.type,
         items: {
           create: items.map((item) => ({

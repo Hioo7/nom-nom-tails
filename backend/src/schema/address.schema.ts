@@ -11,11 +11,18 @@ export const CreateAddressSchema = z.object({
   city: z.string().trim().min(1, 'City is required'),
   state: z.string().trim().min(1, 'State is required'),
   pin: z.string().trim().min(1, 'PIN code is required'),
-  lat: z.number({ error: 'Latitude is required' }),
-  lng: z.number({ error: 'Longitude is required' }),
+  lat: z.number().optional(),
+  lng: z.number().optional(),
 });
 
 export const UpdateAddressSchema = CreateAddressSchema.partial();
 
+export const UpdateCurrentLocationSchema = z.object({
+  lat: z.number().min(-90).max(90),
+  lng: z.number().min(-180).max(180),
+  displayName: z.string().trim().min(1),
+});
+
 export type CreateAddressInput = z.infer<typeof CreateAddressSchema>;
 export type UpdateAddressInput = z.infer<typeof UpdateAddressSchema>;
+export type UpdateCurrentLocationInput = z.infer<typeof UpdateCurrentLocationSchema>;

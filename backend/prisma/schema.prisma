@@ -77,8 +77,6 @@ model User {
   role          Role           @default(CUSTOMER)
   isActive      Boolean        @default(true)
   isLoyalty     Boolean        @default(false)
-  lat           Float?
-  lng           Float?
   orders        Order[]
   subscriptions Subscription[]
   deliveryTasks DeliveryTask[]
@@ -91,21 +89,23 @@ model User {
 // ─── Address ──────────────────────────────────────────────────────────────────
 
 model Address {
-  id        String      @id @default(cuid())
-  user      User        @relation(fields: [userId], references: [id])
-  userId    String
-  type      AddressType @default(HOME)
-  fullName  String
-  phone     String
-  line1     String
-  line2     String?
-  city      String
-  state     String
-  pin       String
-  lat       Float
-  lng       Float
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
+  id                String      @id @default(cuid())
+  user              User        @relation(fields: [userId], references: [id])
+  userId            String
+  type              AddressType @default(HOME)
+  isCurrentLocation Boolean     @default(false)
+  displayName       String?
+  fullName          String?
+  phone             String?
+  line1             String?
+  line2             String?
+  city              String?
+  state             String?
+  pin               String?
+  lat               Float?
+  lng               Float?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
 }
 
 // ─── Ingredient ───────────────────────────────────────────────────────────────
@@ -239,8 +239,8 @@ model Order {
   deliveryCity         String
   deliveryState        String
   deliveryPin          String
-  deliveryLat          Float
-  deliveryLng          Float
+  deliveryLat          Float?
+  deliveryLng          Float?
   deliveryAddressType  AddressType
   status               OrderStatus   @default(PENDING)
   items          OrderItem[]

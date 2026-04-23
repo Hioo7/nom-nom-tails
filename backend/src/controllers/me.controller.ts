@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import MeService from '../services/me.service';
-import { parseUpdateMeBody, parseUpdateLocationBody } from '../validators/me.validator';
+import { parseUpdateMeBody } from '../validators/me.validator';
 
 const meService = MeService.getInstance();
 
@@ -17,16 +17,6 @@ export async function updateMe(req: Request, res: Response, next: NextFunction):
   try {
     const input = parseUpdateMeBody(req.body);
     const user = await meService.updateMe(req.user!.id, input);
-    res.status(200).json({ data: user });
-  } catch (err) {
-    next(err);
-  }
-}
-
-export async function updateLocation(req: Request, res: Response, next: NextFunction): Promise<void> {
-  try {
-    const input = parseUpdateLocationBody(req.body);
-    const user = await meService.updateLocation(req.user!.id, input);
     res.status(200).json({ data: user });
   } catch (err) {
     next(err);

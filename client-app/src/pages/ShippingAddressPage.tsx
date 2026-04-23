@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiArrowLeft, FiCheck, FiHome, FiBriefcase, FiMapPin, FiTrash2, FiPlus, FiEdit2 } from 'react-icons/fi';
+import { FiArrowLeft, FiCheck, FiHome, FiBriefcase, FiMapPin, FiTrash2, FiPlus, FiEdit2, FiNavigation, FiLoader } from 'react-icons/fi';
 import { useAddresses } from '../hooks/useAddresses';
 import { formatAddress, type StoredAddress, type AddressType } from '../lib/addressStore';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
+import { reverseGeocode } from '../hooks/useGpsLocation';
 
 const TYPE_META: Record<AddressType, { label: string; icon: React.ReactNode }> = {
   HOME: { label: 'Home', icon: <FiHome size={13} /> },
@@ -12,7 +13,7 @@ const TYPE_META: Record<AddressType, { label: string; icon: React.ReactNode }> =
 };
 
 function emptyForm(): Omit<StoredAddress, 'id'> {
-  return { type: 'HOME', fullName: '', phone: '', line1: '', line2: '', city: '', state: '', pin: '' };
+  return { type: 'HOME', fullName: '', phone: '', line1: '', line2: '', city: '', state: '', pin: '', lat: null, lng: null };
 }
 
 function Field({
@@ -55,6 +56,7 @@ export function ShippingAddressPage() {
   const [errors, setErrors] = useState<Partial<Record<keyof StoredAddress, string>>>({});
   const [saving, setSaving] = useState(false);
   const [savedId, setSavedId] = useState<string | null>(null);
+  const [detectingGps, setDetectingGps] = useState(false);
 
   const set = (field: keyof Omit<StoredAddress, 'id'>) =>
     (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -94,6 +96,32 @@ export function ShippingAddressPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleDetectGps = () => {
+    if (!('geolocation' in navigator)) return;
+    setDetectingGps(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude: lat, longitude: lng } = pos.coords;
+        try {
+          const address = await reverseGeocode(lat, lng);
+          const parts = address.split(', ');
+          setForm((prev) => ({
+            ...prev,
+            lat,
+            lng,
+            line1: prev.line1 || parts[0] || prev.line1,
+            city: prev.city || parts[1] || prev.city,
+          }));
+        } catch {
+          setForm((prev) => ({ ...prev, lat, lng }));
+        }
+        setDetectingGps(false);
+      },
+      () => setDetectingGps(false),
+      { enableHighAccuracy: true, timeout: 8000 },
+    );
   };
 
   const handleEdit = (a: StoredAddress) => {
@@ -182,6 +210,18 @@ export function ShippingAddressPage() {
                     </button>
                   ))}
                 </div>
+
+                {/* GPS detect */}
+                <button
+                  type="button"
+                  onClick={handleDetectGps}
+                  disabled={detectingGps}
+                  className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl border border-orange-200 bg-orange-50 text-orange-600 text-xs font-semibold mb-1 disabled:opacity-60"
+                >
+                  {detectingGps ? <FiLoader size={13} className="animate-spin" /> : <FiNavigation size={13} />}
+                  {detectingGps ? 'Detecting…' : 'Use current GPS location'}
+                  {form.lat && <span className="ml-auto text-green-600 font-normal">✓ Located</span>}
+                </button>
 
                 <div className="flex flex-col gap-3">
                   <div className="grid grid-cols-2 gap-3">

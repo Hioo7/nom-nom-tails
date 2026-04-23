@@ -1,4 +1,4 @@
-import { UpdateMeInput, UpdateLocationInput } from '../schema/me.schema';
+import { UpdateMeInput } from '../schema/me.schema';
 import { SafeUser } from '../types/user.types';
 import { hash, compare } from '../lib/password';
 import AppError from '../lib/AppError';
@@ -20,15 +20,6 @@ class MeService {
       omit: { password: true },
     });
     if (!user) throw new AppError(404, 'User not found');
-    return user;
-  }
-
-  async updateLocation(userId: string, data: UpdateLocationInput): Promise<SafeUser> {
-    const user = await prisma.user.update({
-      where: { id: userId },
-      data: { lat: data.lat, lng: data.lng },
-      omit: { password: true },
-    });
     return user;
   }
 

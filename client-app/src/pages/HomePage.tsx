@@ -18,11 +18,7 @@ export function HomePage() {
   const [query, setQuery] = useState('');
   const [pickerOpen, setPickerOpen] = useState(false);
 
-  const { status, location, requestLocation, setManualLocation } = useGpsLocation(
-    token,
-    user?.lat,
-    user?.lng,
-  );
+  const { status, location, requestLocation, setManualLocation } = useGpsLocation(token);
 
   useEffect(() => {
     dishService
