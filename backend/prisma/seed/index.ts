@@ -10,6 +10,7 @@ import { seedTimeSlots } from './timeSlots';
 import { seedCustomers } from './customers';
 import { seedSubscriptions } from './subscriptions';
 import { seedStandaloneOrders } from './standaloneOrders';
+import { seedCampaigns } from './campaigns';
 
 async function populate(): Promise<void> {
   console.log('Ensuring MinIO bucket exists...');
@@ -35,6 +36,9 @@ async function populate(): Promise<void> {
 
   console.log('Seeding customers...');
   const customers = await seedCustomers();
+
+  console.log('Seeding campaigns with images...');
+  await seedCampaigns(customers);
 
   console.log('Seeding subscriptions and their auto-generated orders...');
   await seedSubscriptions({ customers, mealPlans, timeSlots, staff });

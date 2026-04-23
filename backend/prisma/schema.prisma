@@ -67,23 +67,36 @@ enum AddressType {
   OTHER
 }
 
+enum CampaignStatus {
+  DRAFT
+  ACTIVE
+  INACTIVE
+  COMPLETED
+}
+
+enum CampaignContributionStatus {
+  SUCCESS
+  FAILED
+}
+
 // ─── User ─────────────────────────────────────────────────────────────────────
 
 model User {
-  id            String         @id @default(cuid())
-  email         String         @unique
-  password      String
-  name          String
-  role          Role           @default(CUSTOMER)
-  isActive      Boolean        @default(true)
-  isLoyalty     Boolean        @default(false)
-  orders        Order[]
-  subscriptions Subscription[]
-  deliveryTasks DeliveryTask[]
-  addresses     Address[]
-  cartItems     CartItem[]
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  id                    String                 @id @default(cuid())
+  email                 String                 @unique
+  password              String
+  name                  String
+  role                  Role                   @default(CUSTOMER)
+  isActive              Boolean                @default(true)
+  isLoyalty             Boolean                @default(false)
+  orders                Order[]
+  subscriptions         Subscription[]
+  deliveryTasks         DeliveryTask[]
+  addresses             Address[]
+  cartItems             CartItem[]
+  campaignContributions CampaignContribution[]
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
 }
 
 // ─── Address ──────────────────────────────────────────────────────────────────
@@ -186,6 +199,40 @@ model MealPlanDish {
   dishId     String
 
   @@unique([mealPlanId, dishId])
+}
+
+model Campaign {
+  id            String                 @id @default(cuid())
+  name          String
+  description   String?
+  imageUrl      String?
+  costAmount    Int
+  startDate     DateTime
+  endDate       DateTime?
+  status        CampaignStatus         @default(DRAFT)
+  contributions CampaignContribution[]
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+
+  @@index([status])
+  @@index([startDate])
+  @@index([endDate])
+}
+
+model CampaignContribution {
+  id         String                     @id @default(cuid())
+  campaign   Campaign                   @relation(fields: [campaignId], references: [id])
+  campaignId String
+  customer   User                       @relation(fields: [customerId], references: [id])
+  customerId String
+  amount     Int
+  status     CampaignContributionStatus @default(SUCCESS)
+  createdAt  DateTime                   @default(now())
+  updatedAt  DateTime                   @updatedAt
+
+  @@index([campaignId])
+  @@index([customerId])
+  @@index([status])
 }
 
 // ─── Subscription ─────────────────────────────────────────────────────────────

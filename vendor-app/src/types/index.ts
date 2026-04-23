@@ -339,3 +339,55 @@ export interface RecordSettlementPaymentPayload {
   paidAt?: string;
   note?: string;
 }
+
+export type CampaignStatus = 'DRAFT' | 'ACTIVE' | 'INACTIVE' | 'COMPLETED';
+
+export interface CampaignSummary {
+  totalRaised: number;
+  totalContributionCount: number;
+  successfulContributionCount: number;
+  failedContributionCount: number;
+}
+
+export interface Campaign {
+  id: string;
+  name: string;
+  description: string | null;
+  imageUrl: string | null;
+  costAmount: number;
+  startDate: string;
+  endDate: string | null;
+  isOngoing: boolean;
+  status: CampaignStatus;
+  summary: CampaignSummary;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateCampaignPayload {
+  name: string;
+  description?: string;
+  cost: number;
+  startDate: string;
+  endDate?: string | null;
+  runForever: boolean;
+  status: CampaignStatus;
+  imageUrl?: string | null;
+}
+
+export type UpdateCampaignPayload = Partial<CreateCampaignPayload>;
+
+export interface CampaignContributionCustomerTotal {
+  customerId: string;
+  customerName: string;
+  customerEmail: string;
+  totalAmount: number;
+  successfulContributionCount: number;
+  failedContributionCount: number;
+  lastContributionAt: string;
+}
+
+export interface CampaignContributionBreakdown {
+  campaign: Campaign;
+  customerBreakdown: CampaignContributionCustomerTotal[];
+}

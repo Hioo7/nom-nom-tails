@@ -1,8 +1,16 @@
+import { SettlementStatus, CampaignContributionStatus } from '@prisma/client';
 import { UpdateMeInput } from '../schema/me.schema';
 import { SafeUser } from '../types/user.types';
 import { hash, compare } from '../lib/password';
 import AppError from '../lib/AppError';
 import prisma from '../lib/prisma';
+
+export interface DonationSummary {
+  fromOrders: number;
+  fromSubscriptions: number;
+  fromCampaigns: number;
+  total: number;
+}
 
 class MeService {
   private static instance: MeService;
@@ -52,6 +60,44 @@ class MeService {
       omit: { password: true },
     });
     return user;
+  }
+
+  async getDonationSummary(customerId: string): Promise<DonationSummary> {
+    const [standaloneResult, subscriptionResult, campaignResult] = await Promise.all([
+      prisma.settlement.aggregate({
+        where: {
+          order: { customerId, subscriptionId: null },
+          status: { in: [SettlementStatus.PARTIAL, SettlementStatus.SETTLED] },
+        },
+        _sum: { paidAmount: true },
+      }),
+      prisma.settlement.aggregate({
+        where: {
+          order: { customerId, subscriptionId: { not: null } },
+          status: { in: [SettlementStatus.PARTIAL, SettlementStatus.SETTLED] },
+        },
+        _sum: { paidAmount: true },
+      }),
+      prisma.campaignContribution.aggregate({
+        where: { customerId, status: CampaignContributionStatus.SUCCESS },
+        _sum: { amount: true },
+      }),
+    ]);
+
+    const orderPaid        = standaloneResult._sum.paidAmount   ?? 0;
+    const subscriptionPaid = subscriptionResult._sum.paidAmount ?? 0;
+    const campaignTotal    = campaignResult._sum.amount         ?? 0;
+
+    const fromOrders        = Math.floor(orderPaid        * 0.05);
+    const fromSubscriptions = Math.floor(subscriptionPaid * 0.05);
+    const fromCampaigns     = campaignTotal;
+
+    return {
+      fromOrders,
+      fromSubscriptions,
+      fromCampaigns,
+      total: fromOrders + fromSubscriptions + fromCampaigns,
+    };
   }
 }
 

@@ -16,6 +16,8 @@ import customerOrderRouter from './customerOrder.routes';
 import customerSubscriptionRouter from './customerSubscription.routes';
 import customerTimeSlotRouter from './customerTimeSlot.routes';
 import subscriptionRouter from './subscription.routes';
+import campaignRouter from './campaign.routes';
+import customerCampaignRouter from './customerCampaign.routes';
 
 const router = Router();
 
@@ -39,5 +41,7 @@ router.use('/customer/orders', customerOrderRouter);
 router.use('/customer/subscriptions', customerSubscriptionRouter);
 router.use('/customer/time-slots', customerTimeSlotRouter);
 router.use('/subscriptions', subscriptionRouter);
+router.use('/campaigns', campaignRouter);
+router.use('/customer/campaigns', customerCampaignRouter);
 
 export default router;

@@ -22,3 +22,12 @@ export async function updateMe(req: Request, res: Response, next: NextFunction):
     next(err);
   }
 }
+
+export async function getDonationSummary(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const summary = await meService.getDonationSummary(req.user!.id);
+    res.status(200).json({ data: summary });
+  } catch (err) {
+    next(err);
+  }
+}

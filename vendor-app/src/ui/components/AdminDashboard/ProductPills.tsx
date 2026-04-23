@@ -1,4 +1,4 @@
-export type ProductSection = 'dishes' | 'mealplan';
+export type ProductSection = 'dishes' | 'mealplan' | 'campaigns';
 
 interface ProductPillsProps {
   activeSection: ProductSection;
@@ -31,6 +31,17 @@ export default function ProductPills({ activeSection, onSectionChange }: Product
             onClick={() => onSectionChange('mealplan')}
           >
             Meal Plan
+          </button>
+          <button
+            type="button"
+            className={`btn btn-sm rounded-full px-4 ${
+              activeSection === 'campaigns'
+                ? 'btn-neutral shadow-sm'
+                : 'btn-ghost border border-base-200'
+            }`}
+            onClick={() => onSectionChange('campaigns')}
+          >
+            Campaigns
           </button>
         </div>
       </div>
