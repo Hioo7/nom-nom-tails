@@ -1,11 +1,9 @@
+import { FiChevronRight } from 'react-icons/fi';
 import type { SafeUser } from '../../../types';
-import UserCardActions from './UserCardActions';
-
-type ActionType = 'editEmail' | 'changePassword' | 'changeRole' | 'delete';
 
 interface UserCardProps {
   user: SafeUser;
-  onAction: (action: ActionType, user: SafeUser) => void;
+  onManage: (user: SafeUser) => void;
 }
 
 function getInitials(name: string): string {
@@ -31,15 +29,15 @@ const ROLE_LABEL: Record<string, string> = {
   DELIVERY_PARTNER: 'Delivery Partner',
 };
 
-export default function UserCard({ user, onAction }: UserCardProps) {
+export default function UserCard({ user, onManage }: UserCardProps) {
   const avatarColor = ROLE_AVATAR[user.role] ?? 'bg-neutral text-neutral-content';
   const badgeColor = ROLE_BADGE[user.role] ?? 'badge-neutral';
   const roleLabel = ROLE_LABEL[user.role] ?? user.role;
 
   return (
-    <div className="card bg-base-100 shadow-sm border border-base-200 hover:shadow-md transition-shadow">
-      <div className="card-body p-4">
-        <div className="flex items-center gap-3">
+    <div className="card border border-base-200 bg-base-100 shadow-sm transition-shadow hover:shadow-md">
+      <div className="card-body gap-4 p-4">
+        <div className="flex items-start gap-3">
           <div className="avatar avatar-placeholder shrink-0">
             <div className={`rounded-full w-10 h-10 text-sm font-bold ${avatarColor}`}>
               <span>{getInitials(user.name)}</span>
@@ -47,19 +45,38 @@ export default function UserCard({ user, onAction }: UserCardProps) {
           </div>
 
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-sm text-base-content truncate leading-tight">{user.name}</p>
-            <p className="text-xs text-base-content/50 truncate leading-tight">{user.email}</p>
-            <div className="flex items-center gap-1 mt-1">
-              <span className={`badge badge-xs ${badgeColor}`}>{roleLabel}</span>
-              {user.isActive
-                ? <span className="badge badge-xs badge-success badge-outline">Active</span>
-                : <span className="badge badge-xs badge-error badge-outline">Inactive</span>
-              }
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold leading-tight text-base-content">
+                  {user.name}
+                </p>
+                <p className="mt-1 truncate text-xs leading-tight text-base-content/50">
+                  {user.email}
+                </p>
+              </div>
+
+              <span className={`badge badge-sm whitespace-nowrap ${badgeColor}`}>{roleLabel}</span>
+            </div>
+
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              {user.isActive ? (
+                <span className="badge badge-sm badge-success badge-outline">Active</span>
+              ) : (
+                <span className="badge badge-sm badge-error badge-outline">Inactive</span>
+              )}
+              <span className="badge badge-sm badge-ghost">Joined {new Date(user.createdAt).getFullYear()}</span>
             </div>
           </div>
         </div>
 
-        <UserCardActions user={user} onAction={onAction} />
+        <button
+          type="button"
+          className="btn btn-outline btn-sm justify-between rounded-full"
+          onClick={() => onManage(user)}
+        >
+          <span>Manage staff</span>
+          <FiChevronRight size={16} />
+        </button>
       </div>
     </div>
   );

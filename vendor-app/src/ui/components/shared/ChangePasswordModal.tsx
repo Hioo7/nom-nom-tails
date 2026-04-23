@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { FiEye, FiEyeOff } from 'react-icons/fi';
+import { FiEye, FiEyeOff, FiLock } from 'react-icons/fi';
 import type { ApiError } from '../../../types';
+import MobileModalShell from './MobileModalShell';
 import PasswordStrengthIndicator from './PasswordStrengthIndicator';
 
 interface ChangePasswordPayload {
@@ -75,108 +76,114 @@ export default function ChangePasswordModal({ mode, onConfirm, onClose }: Change
   };
 
   return (
-    <dialog ref={dialogRef} className="modal" onClose={onClose}>
-      <div className="modal-box max-w-sm">
-        <h3 className="font-bold text-lg">Change Password</h3>
-        <p className="text-sm text-base-content/60 mt-1">
-          {mode === 'self'
-            ? 'Enter your current password and choose a new one.'
-            : 'Set a new password for this user.'}
-        </p>
-
-        <div className="flex flex-col gap-3 mt-4">
-          {mode === 'self' && (
-            <fieldset className="fieldset">
-              <legend className="fieldset-legend">Current Password</legend>
-              <div className="relative">
-                <input
-                  type={showCurrent ? 'text' : 'password'}
-                  className="input w-full pr-10"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  disabled={isSubmitting}
-                  autoFocus
-                  autoComplete="current-password"
-                />
-                <ShowHideButton
-                  show={showCurrent}
-                  onToggle={() => setShowCurrent((s) => !s)}
-                  disabled={isSubmitting}
-                />
-              </div>
-            </fieldset>
-          )}
-
-          <fieldset className="fieldset">
-            <legend className="fieldset-legend">New Password</legend>
-            <div className="relative">
-              <input
-                type={showNew ? 'text' : 'password'}
-                className="input w-full pr-10"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                disabled={isSubmitting}
-                autoFocus={mode === 'other'}
-                autoComplete="new-password"
-                placeholder="Min. 8 characters"
-              />
-              <ShowHideButton
-                show={showNew}
-                onToggle={() => setShowNew((s) => !s)}
-                disabled={isSubmitting}
-              />
-            </div>
-            <PasswordStrengthIndicator password={newPassword} />
-          </fieldset>
-
-          <fieldset className="fieldset">
-            <legend className="fieldset-legend">Confirm Password</legend>
-            <div className="relative">
-              <input
-                type={showConfirm ? 'text' : 'password'}
-                className={`input w-full pr-10${
-                  confirmPassword && !passwordsMatch ? ' input-error' : ''
-                }`}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                disabled={isSubmitting}
-                autoComplete="new-password"
-                placeholder="Repeat new password"
-              />
-              <ShowHideButton
-                show={showConfirm}
-                onToggle={() => setShowConfirm((s) => !s)}
-                disabled={isSubmitting}
-              />
-            </div>
-            {confirmPassword && !passwordsMatch && (
-              <p className="text-error text-xs mt-1">Passwords do not match.</p>
-            )}
-          </fieldset>
-        </div>
-
-        {errorMessage && (
-          <div className="alert alert-error text-sm mt-3 py-2">
-            <span>{errorMessage}</span>
-          </div>
-        )}
-
-        <div className="modal-action">
-          <button className="btn btn-ghost" onClick={onClose} disabled={isSubmitting}>
+    <MobileModalShell
+      dialogRef={dialogRef}
+      title="Change password"
+      description={
+        mode === 'self'
+          ? 'Enter your current password, then choose a secure new one.'
+          : 'Set a new password for this account with larger mobile-friendly fields.'
+      }
+      icon={<FiLock size={18} className="text-primary" />}
+      onClose={onClose}
+      maxWidthClassName="sm:max-w-lg"
+      footer={
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <button
+            type="button"
+            className="btn btn-ghost order-2 w-full sm:order-1"
+            onClick={onClose}
+            disabled={isSubmitting}
+          >
             Cancel
           </button>
           <button
-            className="btn btn-primary"
+            type="button"
+            className="btn btn-primary order-1 w-full sm:order-2"
             disabled={!isValid || isSubmitting}
-            onClick={handleSubmit}
+            onClick={() => {
+              void handleSubmit();
+            }}
           >
-            {isSubmitting ? <span className="loading loading-spinner loading-sm" /> : 'Change'}
+            {isSubmitting ? <span className="loading loading-spinner loading-sm" /> : 'Update password'}
           </button>
         </div>
-      </div>
-      <form method="dialog" className="modal-backdrop">
-        <button>close</button>
-      </form>
-    </dialog>
+      }
+    >
+      {mode === 'self' ? (
+        <fieldset className="fieldset py-0">
+          <legend className="fieldset-legend">Current password</legend>
+          <div className="relative">
+            <input
+              type={showCurrent ? 'text' : 'password'}
+              className="input input-md w-full pr-10"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              disabled={isSubmitting}
+              autoFocus
+              autoComplete="current-password"
+            />
+            <ShowHideButton
+              show={showCurrent}
+              onToggle={() => setShowCurrent((s) => !s)}
+              disabled={isSubmitting}
+            />
+          </div>
+        </fieldset>
+      ) : null}
+
+      <fieldset className="fieldset py-0">
+        <legend className="fieldset-legend">New password</legend>
+        <div className="relative">
+          <input
+            type={showNew ? 'text' : 'password'}
+            className="input input-md w-full pr-10"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            disabled={isSubmitting}
+            autoFocus={mode === 'other'}
+            autoComplete="new-password"
+            placeholder="Minimum 8 characters"
+          />
+          <ShowHideButton
+            show={showNew}
+            onToggle={() => setShowNew((s) => !s)}
+            disabled={isSubmitting}
+          />
+        </div>
+        <PasswordStrengthIndicator password={newPassword} />
+      </fieldset>
+
+      <fieldset className="fieldset py-0">
+        <legend className="fieldset-legend">Confirm password</legend>
+        <div className="relative">
+          <input
+            type={showConfirm ? 'text' : 'password'}
+            className={`input input-md w-full pr-10${
+              confirmPassword && !passwordsMatch ? ' input-error' : ''
+            }`}
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            disabled={isSubmitting}
+            autoComplete="new-password"
+            placeholder="Repeat new password"
+          />
+          <ShowHideButton
+            show={showConfirm}
+            onToggle={() => setShowConfirm((s) => !s)}
+            disabled={isSubmitting}
+          />
+        </div>
+        {confirmPassword && !passwordsMatch ? (
+          <p className="mt-1 text-xs text-error">Passwords do not match.</p>
+        ) : null}
+      </fieldset>
+
+      {errorMessage ? (
+        <div className="alert alert-error text-sm">
+          <span>{errorMessage}</span>
+        </div>
+      ) : null}
+    </MobileModalShell>
   );
 }

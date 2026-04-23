@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
+import { FiMail } from 'react-icons/fi';
 import type { ApiError } from '../../../types';
+import MobileModalShell from './MobileModalShell';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -38,45 +40,60 @@ export default function EditEmailModal({ currentEmail, onConfirm, onClose }: Edi
   };
 
   return (
-    <dialog ref={dialogRef} className="modal" onClose={onClose}>
-      <div className="modal-box max-w-sm">
-        <h3 className="font-bold text-lg">Edit Email</h3>
-        <p className="text-sm text-base-content/60 mt-1">Enter the new email address.</p>
-
-        <fieldset className="fieldset mt-4">
-          <legend className="fieldset-legend">Email Address</legend>
-          <input
-            type="email"
-            className="input w-full"
-            value={emailValue}
-            onChange={(e) => setEmailValue(e.target.value)}
+    <MobileModalShell
+      dialogRef={dialogRef}
+      title="Edit email"
+      description="Update the account email with a mobile-friendly form."
+      icon={<FiMail size={18} className="text-primary" />}
+      onClose={onClose}
+      footer={
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <button
+            type="button"
+            className="btn btn-ghost order-2 w-full sm:order-1"
+            onClick={onClose}
             disabled={isSubmitting}
-            autoFocus
-          />
-        </fieldset>
-
-        {errorMessage && (
-          <div className="alert alert-error text-sm mt-3 py-2">
-            <span>{errorMessage}</span>
-          </div>
-        )}
-
-        <div className="modal-action">
-          <button className="btn btn-ghost" onClick={onClose} disabled={isSubmitting}>
+          >
             Cancel
           </button>
           <button
-            className="btn btn-primary"
+            type="button"
+            className="btn btn-primary order-1 w-full sm:order-2"
             disabled={!isValid || isSubmitting}
-            onClick={handleSubmit}
+            onClick={() => {
+              void handleSubmit();
+            }}
           >
-            {isSubmitting ? <span className="loading loading-spinner loading-sm" /> : 'Change'}
+            {isSubmitting ? <span className="loading loading-spinner loading-sm" /> : 'Save email'}
           </button>
         </div>
+      }
+    >
+      <div className="rounded-2xl bg-base-200/70 px-4 py-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-base-content/45">
+          Current email
+        </p>
+        <p className="mt-1 break-all text-sm font-medium text-base-content">{currentEmail}</p>
       </div>
-      <form method="dialog" className="modal-backdrop">
-        <button>close</button>
-      </form>
-    </dialog>
+
+      <fieldset className="fieldset py-0">
+        <legend className="fieldset-legend">New email address</legend>
+        <input
+          type="email"
+          className="input input-md w-full"
+          value={emailValue}
+          onChange={(e) => setEmailValue(e.target.value)}
+          disabled={isSubmitting}
+          autoFocus
+          placeholder="jane@example.com"
+        />
+      </fieldset>
+
+      {errorMessage ? (
+        <div className="alert alert-error text-sm">
+          <span>{errorMessage}</span>
+        </div>
+      ) : null}
+    </MobileModalShell>
   );
 }

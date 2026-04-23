@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { FiAlertTriangle } from 'react-icons/fi';
 import type { ApiError, SafeUser } from '../../../types';
+import MobileModalShell from '../shared/MobileModalShell';
 
 interface DeleteUserModalProps {
   user: SafeUser;
@@ -32,43 +33,52 @@ export default function DeleteUserModal({ user, onConfirm, onClose }: DeleteUser
   };
 
   return (
-    <dialog ref={dialogRef} className="modal" onClose={onClose}>
-      <div className="modal-box max-w-sm">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="bg-error/10 p-2 rounded-full">
-            <FiAlertTriangle size={20} className="text-error" />
-          </div>
-          <h3 className="font-bold text-lg">Delete Staff Member</h3>
-        </div>
-
-        <p className="text-sm text-base-content/70 mb-3">
-          Are you sure you want to delete this staff member? This action cannot be undone.
-        </p>
-
-        <div className="bg-error/10 rounded-box p-3">
-          <p className="font-semibold text-base-content">{user.name}</p>
-          <p className="text-sm text-base-content/60">{user.email}</p>
-          <span className="badge badge-sm badge-ghost mt-1">{user.role.replace('_', ' ')}</span>
-        </div>
-
-        {errorMessage && (
-          <div className="alert alert-error text-sm mt-3 py-2">
-            <span>{errorMessage}</span>
-          </div>
-        )}
-
-        <div className="modal-action">
-          <button className="btn btn-ghost" onClick={onClose} disabled={isSubmitting}>
+    <MobileModalShell
+      dialogRef={dialogRef}
+      title="Delete staff member"
+      description="This permanently removes the account from the system."
+      icon={<FiAlertTriangle size={18} className="text-error" />}
+      onClose={onClose}
+      footer={
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <button
+            type="button"
+            className="btn btn-ghost order-2 w-full sm:order-1"
+            onClick={onClose}
+            disabled={isSubmitting}
+          >
             Cancel
           </button>
-          <button className="btn btn-error" onClick={handleConfirm} disabled={isSubmitting}>
-            {isSubmitting ? <span className="loading loading-spinner loading-sm" /> : 'Delete'}
+          <button
+            type="button"
+            className="btn btn-error order-1 w-full sm:order-2"
+            onClick={() => {
+              void handleConfirm();
+            }}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? <span className="loading loading-spinner loading-sm" /> : 'Delete staff member'}
           </button>
         </div>
+      }
+    >
+      <div className="rounded-2xl border border-error/20 bg-error/10 px-4 py-4">
+        <p className="text-sm text-base-content/70">
+          This action cannot be undone. Double-check the staff member below before continuing.
+        </p>
       </div>
-      <form method="dialog" className="modal-backdrop">
-        <button>close</button>
-      </form>
-    </dialog>
+
+      <div className="rounded-2xl border border-base-200 bg-base-200/60 px-4 py-4">
+        <p className="font-semibold text-base-content">{user.name}</p>
+        <p className="mt-1 break-all text-sm text-base-content/60">{user.email}</p>
+        <span className="badge badge-sm badge-ghost mt-3">{user.role.replace('_', ' ')}</span>
+      </div>
+
+      {errorMessage ? (
+        <div className="alert alert-error text-sm">
+          <span>{errorMessage}</span>
+        </div>
+      ) : null}
+    </MobileModalShell>
   );
 }

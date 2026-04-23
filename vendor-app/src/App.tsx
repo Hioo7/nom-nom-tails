@@ -1,6 +1,7 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './context/auth.provider';
 import ProtectedRoute from './ui/components/shared/ProtectedRoute';
+import LandingPage from './ui/pages/LandingPage';
 import LoginPage from './ui/pages/LoginPage';
 import NotFoundPage from './ui/pages/NotFoundPage';
 import AdminDashboardPage from './ui/pages/AdminDashboardPage';
@@ -13,7 +14,7 @@ function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route
             path="/super-admin"

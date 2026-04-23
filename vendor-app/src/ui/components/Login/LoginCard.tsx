@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiHeart } from 'react-icons/fi';
 import { useAuth } from '../../../hooks/useAuth';
 import LoginForm from './LoginForm';
+import nomnomlogo from '../../../assets/nomnomlogo.webp';
 
 // Only roles with a real dashboard get auto-redirected
 const REAL_DASHBOARDS: Partial<Record<string, string>> = {
@@ -34,10 +34,7 @@ export default function LoginCard() {
     <div className="card w-full max-w-sm bg-base-100 shadow-xl">
       <div className="card-body gap-4">
         <div className="flex flex-col items-center gap-2 mb-2">
-          <div className="flex items-center gap-2 text-primary">
-            <FiHeart size={28} className="fill-current" />
-            <span className="text-2xl font-extrabold tracking-tight">Dog Dash</span>
-          </div>
+          <img src={nomnomlogo} alt="NomNom Tails" className="h-16 w-auto" />
           <p className="text-sm text-base-content/50 font-medium uppercase tracking-widest">
             Staff Portal
           </p>

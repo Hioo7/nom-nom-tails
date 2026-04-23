@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { FiShield } from 'react-icons/fi';
 import type { ApiError, SafeUser } from '../../../types';
+import MobileModalShell from '../shared/MobileModalShell';
 
 type StaffRole = 'ADMIN' | 'DELIVERY_PARTNER';
 
@@ -12,6 +13,11 @@ const ROLE_LABELS: Record<StaffRole, string> = {
 const ROLE_BADGE: Record<StaffRole, string> = {
   ADMIN: 'badge-secondary',
   DELIVERY_PARTNER: 'badge-accent',
+};
+
+const ROLE_CARD_STYLES: Record<StaffRole, string> = {
+  ADMIN: 'border-secondary/30 bg-secondary/5',
+  DELIVERY_PARTNER: 'border-accent/30 bg-accent/5',
 };
 
 interface ChangeRoleModalProps {
@@ -49,60 +55,83 @@ export default function ChangeRoleModal({ user, onConfirm, onClose }: ChangeRole
   };
 
   return (
-    <dialog ref={dialogRef} className="modal" onClose={onClose}>
-      <div className="modal-box max-w-sm">
-        <div className="flex items-center gap-2 mb-1">
-          <FiShield size={18} className="text-primary" />
-          <h3 className="font-bold text-lg">Change Role</h3>
-        </div>
-        <p className="text-sm text-base-content/60 mb-4">
-          Changing role for <span className="font-semibold text-base-content">{user.name}</span>
-        </p>
-
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-base-content/60">Current:</span>
-            <span className={`badge badge-sm ${ROLE_BADGE[currentRole]}`}>
-              {ROLE_LABELS[currentRole]}
-            </span>
-          </div>
-
-          <fieldset className="fieldset">
-            <legend className="fieldset-legend">New Role</legend>
-            <select
-              className="select w-full"
-              value={selectedRole}
-              onChange={(e) => setSelectedRole(e.target.value as StaffRole)}
-              disabled={isSubmitting}
-            >
-              <option value="ADMIN">Admin</option>
-              <option value="DELIVERY_PARTNER">Delivery Partner</option>
-            </select>
-          </fieldset>
-        </div>
-
-        {errorMessage && (
-          <div className="alert alert-error text-sm mt-3 py-2">
-            <span>{errorMessage}</span>
-          </div>
-        )}
-
-        <div className="modal-action">
-          <button className="btn btn-ghost" onClick={onClose} disabled={isSubmitting}>
+    <MobileModalShell
+      dialogRef={dialogRef}
+      title="Change role"
+      description={
+        <>
+          Choose the new role for <span className="font-semibold text-base-content">{user.name}</span>.
+        </>
+      }
+      icon={<FiShield size={18} className="text-primary" />}
+      onClose={onClose}
+      footer={
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <button
+            type="button"
+            className="btn btn-ghost order-2 w-full sm:order-1"
+            onClick={onClose}
+            disabled={isSubmitting}
+          >
             Cancel
           </button>
           <button
-            className="btn btn-primary"
+            type="button"
+            className="btn btn-primary order-1 w-full sm:order-2"
             disabled={!isValid || isSubmitting}
-            onClick={handleSubmit}
+            onClick={() => {
+              void handleSubmit();
+            }}
           >
-            {isSubmitting ? <span className="loading loading-spinner loading-sm" /> : 'Change'}
+            {isSubmitting ? <span className="loading loading-spinner loading-sm" /> : 'Save role'}
           </button>
         </div>
+      }
+    >
+      <div className="flex items-center gap-2 rounded-2xl bg-base-200/70 px-4 py-3">
+        <span className="text-sm text-base-content/60">Current role</span>
+        <span className={`badge badge-sm ${ROLE_BADGE[currentRole]}`}>{ROLE_LABELS[currentRole]}</span>
       </div>
-      <form method="dialog" className="modal-backdrop">
-        <button>close</button>
-      </form>
-    </dialog>
+
+      <div className="grid gap-3">
+        {(['ADMIN', 'DELIVERY_PARTNER'] as const).map((role) => {
+          const isSelected = selectedRole === role;
+
+          return (
+            <button
+              key={role}
+              type="button"
+              className={`rounded-2xl border px-4 py-4 text-left transition ${
+                isSelected
+                  ? 'border-primary bg-primary/8 ring-1 ring-primary/20'
+                  : ROLE_CARD_STYLES[role]
+              }`}
+              onClick={() => setSelectedRole(role)}
+              disabled={isSubmitting}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="font-semibold text-base-content">{ROLE_LABELS[role]}</p>
+                  <p className="mt-1 text-sm text-base-content/60">
+                    {role === 'ADMIN'
+                      ? 'Can manage internal operations and staff workflows.'
+                      : 'Handles order pickup, routing, and delivery updates.'}
+                  </p>
+                </div>
+                <span className={`badge badge-sm ${ROLE_BADGE[role]}`}>
+                  {isSelected ? 'Selected' : 'Choose'}
+                </span>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {errorMessage ? (
+        <div className="alert alert-error text-sm">
+          <span>{errorMessage}</span>
+        </div>
+      ) : null}
+    </MobileModalShell>
   );
 }

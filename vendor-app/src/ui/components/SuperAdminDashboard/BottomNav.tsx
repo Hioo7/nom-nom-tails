@@ -1,10 +1,9 @@
 import { FiUser, FiUsers } from 'react-icons/fi';
-
-type Tab = 'users' | 'profile';
+import type { SuperAdminDashboardTab } from './superAdminNavigation';
 
 interface BottomNavProps {
-  activeTab: Tab;
-  onTabChange: (tab: Tab) => void;
+  activeTab: SuperAdminDashboardTab;
+  onTabChange: (tab: SuperAdminDashboardTab) => void;
 }
 
 interface NavItemProps {
@@ -35,7 +34,7 @@ function NavItem({ icon, label, active, onClick }: NavItemProps) {
 
 export default function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-20 bg-base-100 border-t border-base-200 flex h-16 shadow-[0_-1px_8px_rgba(0,0,0,0.06)]">
+    <nav className="fixed inset-x-0 bottom-0 z-20 mx-auto flex h-16 max-w-screen-md border-t border-base-200 bg-base-100/95 shadow-[0_-1px_8px_rgba(0,0,0,0.06)] backdrop-blur supports-[backdrop-filter]:bg-base-100/80">
       <NavItem
         icon={<FiUsers size={22} />}
         label="Staff"

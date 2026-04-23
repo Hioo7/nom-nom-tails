@@ -54,6 +54,7 @@ export async function clearAll(): Promise<void> {
   await prisma.dish.deleteMany();
   await prisma.timeSlot.deleteMany();
   await prisma.ingredient.deleteMany();
+  await prisma.address.deleteMany();
   await prisma.user.deleteMany({ where: { role: { not: Role.SUPER_ADMIN } } });
 
   await drainMinioBucket();
