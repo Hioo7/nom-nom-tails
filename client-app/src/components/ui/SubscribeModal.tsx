@@ -3,6 +3,7 @@ import { FiX, FiCheck, FiClock, FiRefreshCw, FiLoader } from 'react-icons/fi';
 import type { MealPlan, TimeSlot } from '../../types';
 import { TimeSlotService } from '../../services/timeslot.service';
 import { SubscriptionService } from '../../services/subscription.service';
+import { paiseToRupees } from '../../utils/currency';
 
 const DAY_LABEL: Record<string, string> = {
   MONDAY: 'Mon', TUESDAY: 'Tue', WEDNESDAY: 'Wed',
@@ -115,11 +116,11 @@ export function SubscribeModal({ plan, token, onClose, onSuccess }: Props) {
           <div className="bg-orange-50 rounded-2xl p-3 flex items-center justify-between">
             <div>
               <p className="text-xs text-gray-500">Plan price</p>
-              <p className="font-bold text-gray-800">₹{plan.price}<span className="text-xs font-normal text-gray-400">/mo</span></p>
+              <p className="font-bold text-gray-800">₹{paiseToRupees(plan.price)}<span className="text-xs font-normal text-gray-400">/mo</span></p>
             </div>
             <div className="text-right">
               <p className="text-xs text-gray-500">Total ({durationMonths} mo)</p>
-              <p className="font-bold text-orange-500 text-lg">₹{totalPrice}</p>
+              <p className="font-bold text-orange-500 text-lg">₹{paiseToRupees(totalPrice)}</p>
             </div>
           </div>
 
@@ -224,7 +225,7 @@ export function SubscribeModal({ plan, token, onClose, onSuccess }: Props) {
             disabled={submitting}
             className="w-full bg-orange-500 hover:bg-orange-600 disabled:opacity-60 text-white font-bold py-4 rounded-2xl text-base transition-colors shadow-lg shadow-orange-200 mb-2"
           >
-            {submitting ? 'Subscribing…' : `Subscribe · ₹${totalPrice}`}
+            {submitting ? 'Subscribing…' : `Subscribe · ₹${paiseToRupees(totalPrice)}`}
           </button>
         </div>
       </div>

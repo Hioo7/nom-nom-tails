@@ -16,6 +16,7 @@ import {
 } from '../lib/addressStore';
 import { useAddresses } from '../hooks/useAddresses';
 import { reverseGeocode } from '../hooks/useGpsLocation';
+import { paiseToRupees } from '../utils/currency';
 
 const DAY_LABEL: Record<string, string> = {
   MONDAY: 'Mon', TUESDAY: 'Tue', WEDNESDAY: 'Wed',
@@ -112,7 +113,7 @@ export function CheckoutPage() {
   const [orderId, setOrderId] = useState('');
 
   const deliveryFee = 40;
-  const grandTotal = totalPrice + deliveryFee;
+  const grandTotal = paiseToRupees(totalPrice) + deliveryFee;
 
   useEffect(() => {
     if (!token) return;
@@ -425,7 +426,7 @@ export function CheckoutPage() {
           {items.map(({ dish, quantity }) => (
             <div key={dish.id} className="flex justify-between text-sm">
               <span className="text-gray-600">{dish.name} × {quantity}</span>
-              <span className="font-medium text-gray-800">₹{dish.price * quantity}</span>
+              <span className="font-medium text-gray-800">₹{paiseToRupees(dish.price * quantity)}</span>
             </div>
           ))}
           <div className="border-t border-gray-100 pt-2 mt-1 flex justify-between text-sm text-gray-500">

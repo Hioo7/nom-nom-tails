@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { FiTrash2, FiPlus, FiMinus, FiShoppingBag } from 'react-icons/fi';
 import { useCart } from '../hooks/useCart';
 import { useAuth } from '../hooks/useAuth';
+import { paiseToRupees } from '../utils/currency';
 
 export function CartPage() {
   const { items, updateQuantity, removeItem, totalItems, totalPrice } = useCart();
@@ -35,7 +36,7 @@ export function CartPage() {
   };
 
   const deliveryFee = 40;
-  const grandTotal = totalPrice + deliveryFee;
+  const grandTotal = paiseToRupees(totalPrice) + deliveryFee;
 
   return (
     <div className="max-w-lg mx-auto px-4">
@@ -60,7 +61,7 @@ export function CartPage() {
             />
             <div className="flex-1 min-w-0">
               <h3 className="font-semibold text-gray-800 text-sm truncate">{dish.name}</h3>
-              <p className="text-orange-500 font-bold text-sm mt-0.5">₹{dish.price * quantity}</p>
+              <p className="text-orange-500 font-bold text-sm mt-0.5">₹{paiseToRupees(dish.price * quantity)}</p>
             </div>
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1.5 bg-gray-50 rounded-full px-2 py-1 border border-gray-100">
@@ -95,7 +96,7 @@ export function CartPage() {
         <div className="flex flex-col gap-2 text-sm">
           <div className="flex justify-between text-gray-600">
             <span>Subtotal</span>
-            <span>₹{totalPrice}</span>
+            <span>₹{paiseToRupees(totalPrice)}</span>
           </div>
           <div className="flex justify-between text-gray-600">
             <span>Delivery fee</span>

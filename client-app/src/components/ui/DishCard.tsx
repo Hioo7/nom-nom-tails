@@ -2,6 +2,7 @@ import { FiPlus } from 'react-icons/fi';
 import type { Dish } from '../../types';
 import { useCart } from '../../hooks/useCart';
 import { useToast } from '../../context/ToastContext';
+import { paiseToRupees } from '../../utils/currency';
 
 export function DishCard({ dish }: { dish: Dish }) {
   const { addItem } = useCart();
@@ -29,7 +30,7 @@ export function DishCard({ dish }: { dish: Dish }) {
         <h3 className="font-semibold text-gray-800 text-sm leading-tight">{dish.name}</h3>
         <p className="text-gray-400 text-xs line-clamp-2">{dish.description}</p>
         <div className="flex items-center justify-between mt-auto pt-2">
-          <span className="font-bold text-gray-900 text-sm">₹{dish.price}</span>
+          <span className="font-bold text-gray-900 text-sm">₹{paiseToRupees(dish.price)}</span>
           <button
             onClick={handleAdd}
             className="flex items-center gap-1 bg-orange-500 hover:bg-orange-600 text-white text-xs font-semibold px-3 py-1.5 rounded-full transition-colors"

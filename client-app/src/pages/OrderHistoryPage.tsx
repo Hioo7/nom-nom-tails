@@ -4,6 +4,7 @@ import { FiArrowLeft, FiSearch, FiPackage } from 'react-icons/fi';
 import { OrderService } from '../services/order.service';
 import { useAuth } from '../hooks/useAuth';
 import type { Order } from '../types';
+import { paiseToRupees } from '../utils/currency';
 
 const orderService = new OrderService();
 
@@ -76,7 +77,7 @@ function OrderCard({ order }: { order: Order }) {
         <div className="text-right">
           <span className="text-xs text-gray-400">Total: </span>
           <span className="font-bold text-gray-900">
-            ₹{order.settlement?.totalAmount ?? '—'}
+            {order.settlement?.totalAmount != null ? `₹${paiseToRupees(order.settlement.totalAmount)}` : '—'}
           </span>
         </div>
       </div>

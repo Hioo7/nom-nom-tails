@@ -7,6 +7,7 @@ import { useAuth } from '../hooks/useAuth';
 import { TimeSlotService } from '../services/timeslot.service';
 import { SubscriptionService } from '../services/subscription.service';
 import type { MealPlan, TimeSlot } from '../types';
+import { paiseToRupees } from '../utils/currency';
 
 const DAY_LABEL: Record<string, string> = {
   MONDAY: 'Mon', TUESDAY: 'Tue', WEDNESDAY: 'Wed',
@@ -143,7 +144,7 @@ export function SubscriptionCheckoutPage() {
         <div className="p-4">
           <div className="flex items-center justify-between">
             <h2 className="font-bold text-gray-800 text-base">{plan.name}</h2>
-            <span className="text-orange-500 font-bold">₹{plan.price}<span className="text-xs text-gray-400 font-normal">/mo</span></span>
+            <span className="text-orange-500 font-bold">₹{paiseToRupees(plan.price)}<span className="text-xs text-gray-400 font-normal">/mo</span></span>
           </div>
           <p className="text-gray-500 text-sm mt-0.5">{plan.description}</p>
           {plan.dishes.length > 0 && (
@@ -185,7 +186,7 @@ export function SubscriptionCheckoutPage() {
             {' → '}
             {new Date(endStr + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
           </p>
-          <p className="font-bold text-orange-500">₹{total}</p>
+          <p className="font-bold text-orange-500">₹{paiseToRupees(total)}</p>
         </div>
       </div>
 
@@ -271,7 +272,7 @@ export function SubscriptionCheckoutPage() {
         disabled={submitting}
         className="w-full bg-orange-500 hover:bg-orange-600 disabled:opacity-60 text-white font-bold py-4 rounded-2xl text-base transition-colors shadow-lg shadow-orange-200"
       >
-        {submitting ? 'Processing…' : `Subscribe Now · ₹${total}`}
+        {submitting ? 'Processing…' : `Subscribe Now · ₹${paiseToRupees(total)}`}
       </button>
     </div>
   );

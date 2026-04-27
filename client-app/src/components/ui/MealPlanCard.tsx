@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { FiChevronDown, FiChevronUp, FiCheck } from 'react-icons/fi';
 import type { MealPlan } from '../../types';
+import { paiseToRupees } from '../../utils/currency';
 
 interface Props {
   plan: MealPlan;
@@ -37,7 +38,7 @@ export function MealPlanCard({ plan, isSubscribed = false, onSubscribe }: Props)
         <div className="flex justify-between items-start mb-1">
           <h3 className="font-bold text-gray-800 text-base">{plan.name}</h3>
           <span className="text-orange-500 font-bold text-sm">
-            ₹{plan.price}<span className="text-gray-400 font-normal text-xs">/mo</span>
+            ₹{paiseToRupees(plan.price)}<span className="text-gray-400 font-normal text-xs">/mo</span>
           </span>
         </div>
         <p className="text-gray-500 text-sm mb-3">{plan.description}</p>
