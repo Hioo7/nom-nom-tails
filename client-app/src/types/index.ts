@@ -149,6 +149,28 @@ export interface CreateOrderPayload {
   timeSlotId: string;
 }
 
+// ── Campaign types ────────────────────────────────────────────────────────────
+
+export interface CampaignSummary {
+  totalRaised: number;
+  totalContributionCount: number;
+  successfulContributionCount: number;
+}
+
+export interface SafeCustomerCampaign {
+  id: string;
+  name: string;
+  description: string | null;
+  imageUrl: string | null;
+  costAmount: number;
+  startDate: string;
+  endDate: string | null;
+  isOngoing: boolean;
+  summary: CampaignSummary;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ── Context value types ───────────────────────────────────────────────────────
 
 export interface AuthContextValue {

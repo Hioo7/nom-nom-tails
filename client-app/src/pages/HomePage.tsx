@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react';
 import { FiSearch, FiMapPin, FiChevronDown } from 'react-icons/fi';
 import { DishCard } from '../components/ui/DishCard';
+import { CampaignCard } from '../components/ui/CampaignCard';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { LocationPicker } from '../components/ui/LocationPicker';
 import { DishService } from '../services/dish.service';
+import { CampaignService } from '../services/campaign.service';
 import { useAuth } from '../hooks/useAuth';
 import { useGpsLocation } from '../hooks/useGpsLocation';
-import type { Dish } from '../types';
+import type { Dish, SafeCustomerCampaign } from '../types';
 
 const dishService = new DishService();
+const campaignService = new CampaignService();
 
 export function HomePage() {
   const { user, token } = useAuth();
@@ -17,6 +20,7 @@ export function HomePage() {
   const [error, setError] = useState('');
   const [query, setQuery] = useState('');
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [campaigns, setCampaigns] = useState<SafeCustomerCampaign[]>([]);
 
   const { status, location, requestLocation, setManualLocation } = useGpsLocation(token);
 
@@ -27,6 +31,11 @@ export function HomePage() {
       .catch(() => setError('Failed to load menu. Please try again.'))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (!token) return;
+    campaignService.list(token).then(setCampaigns).catch(() => {});
+  }, [token]);
 
   const filtered = dishes.filter(
     (d) =>
@@ -81,6 +90,28 @@ export function HomePage() {
             className="w-full pl-10 pr-4 py-3 bg-white rounded-2xl border border-gray-100 shadow-sm text-sm outline-none focus:border-orange-300 transition-colors"
           />
         </div>
+
+        {/* Campaigns */}
+        {campaigns.length > 0 && (
+          <div className="mb-5 -mx-4">
+            <div className="px-4 flex items-center justify-between mb-2.5">
+              <div>
+                <h2 className="text-sm font-bold text-gray-900">Support a Cause 🐶</h2>
+                <p className="text-xs text-gray-400">Help feed animals in need</p>
+              </div>
+            </div>
+            <div
+              className="flex gap-3 overflow-x-auto px-4 pb-1 scrollbar-hide"
+              style={{ scrollSnapType: 'x mandatory' }}
+            >
+              {campaigns.map((c) => (
+                <div key={c.id} style={{ scrollSnapAlign: 'start' }}>
+                  <CampaignCard campaign={c} />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Content */}
         {loading ? (

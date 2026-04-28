@@ -2,13 +2,14 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   FiArrowLeft, FiMapPin, FiClock, FiCheck,
-  FiPlus, FiHome, FiBriefcase, FiChevronDown, FiChevronUp, FiNavigation, FiLoader,
+  FiPlus, FiHome, FiBriefcase, FiChevronDown, FiChevronUp, FiNavigation, FiLoader, FiHeart,
 } from 'react-icons/fi';
 import { useCart } from '../hooks/useCart';
 import { useAuth } from '../hooks/useAuth';
 import { OrderService } from '../services/order.service';
 import { TimeSlotService } from '../services/timeslot.service';
-import type { TimeSlot } from '../types';
+import { CampaignService } from '../services/campaign.service';
+import type { TimeSlot, SafeCustomerCampaign } from '../types';
 import {
   formatAddress,
   type StoredAddress,
@@ -45,8 +46,8 @@ function nextDateForDay(day: string): string {
 }
 
 const timeSlotService = new TimeSlotService();
-
 const orderService = new OrderService();
+const campaignService = new CampaignService();
 
 type Step = 'details' | 'success';
 
@@ -112,8 +113,12 @@ export function CheckoutPage() {
   const [error, setError] = useState('');
   const [orderId, setOrderId] = useState('');
 
+  const [campaigns, setCampaigns] = useState<SafeCustomerCampaign[]>([]);
+  const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
+
   const deliveryFee = 40;
-  const grandTotal = paiseToRupees(totalPrice) + deliveryFee;
+  const selectedCampaign = campaigns.find((c) => c.id === selectedCampaignId) ?? null;
+  const grandTotal = paiseToRupees(totalPrice) + deliveryFee + (selectedCampaign ? paiseToRupees(selectedCampaign.costAmount) : 0);
 
   useEffect(() => {
     if (!token) return;
@@ -124,6 +129,7 @@ export function CheckoutPage() {
         setTimeSlots([]);
         setError('Failed to load delivery slots. Please refresh.');
       });
+    campaignService.list(token).then(setCampaigns).catch(() => {});
   }, [token]);
 
   // Auto-select first address; allow manual override
@@ -207,6 +213,13 @@ export function CheckoutPage() {
         addressId: selected.id,
         timeSlotId: selectedSlotId,
       });
+      if (selectedCampaignId) {
+        try {
+          await campaignService.contribute(token, selectedCampaignId);
+        } catch {
+          // contribution failure should not block the order success
+        }
+      }
       setOrderId(order.id);
       clearCart();
       setStep('success');
@@ -440,6 +453,67 @@ export function CheckoutPage() {
         </div>
       </div>
 
+      {/* Campaign contribution */}
+      {campaigns.length > 0 && (
+        <div className="bg-white rounded-2xl shadow-sm mb-4 overflow-hidden">
+          <div className="px-4 pt-4 pb-3 border-b border-gray-50 flex items-center gap-2">
+            <FiHeart size={16} className="text-orange-500" />
+            <h3 className="font-bold text-gray-800 text-sm">Support a Cause</h3>
+          </div>
+          <div className="divide-y divide-gray-50">
+            {/* No contribution option */}
+            <button
+              onClick={() => setSelectedCampaignId(null)}
+              className={`w-full text-left px-4 py-3 flex items-center gap-3 transition-colors ${selectedCampaignId === null ? 'bg-orange-50' : 'hover:bg-gray-50'}`}
+            >
+              <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors ${selectedCampaignId === null ? 'border-orange-500 bg-orange-500' : 'border-gray-300'}`}>
+                {selectedCampaignId === null && <div className="w-2 h-2 rounded-full bg-white" />}
+              </div>
+              <span className="text-sm text-gray-500">No, thanks</span>
+            </button>
+
+            {/* Campaign options */}
+            {campaigns.map((c) => {
+              const isSelected = selectedCampaignId === c.id;
+              const raised = paiseToRupees(c.summary.totalRaised);
+              const goal = paiseToRupees(c.costAmount);
+              const percent = Math.min(100, goal > 0 ? Math.round((raised / goal) * 100) : 0);
+              return (
+                <button
+                  key={c.id}
+                  onClick={() => setSelectedCampaignId(c.id)}
+                  className={`w-full text-left px-4 py-3 flex items-start gap-3 transition-colors ${isSelected ? 'bg-orange-50' : 'hover:bg-gray-50'}`}
+                >
+                  <div className={`mt-0.5 w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors ${isSelected ? 'border-orange-500 bg-orange-500' : 'border-gray-300'}`}>
+                    {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
+                  </div>
+                  {c.imageUrl ? (
+                    <img src={c.imageUrl} alt={c.name} className="w-10 h-10 rounded-xl object-cover flex-shrink-0" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center flex-shrink-0 text-xl">🐾</div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-bold text-gray-800 truncate">{c.name}</p>
+                      <span className="text-xs font-bold text-orange-500 flex-shrink-0">+₹{paiseToRupees(c.costAmount)}</span>
+                    </div>
+                    {c.description && (
+                      <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{c.description}</p>
+                    )}
+                    <div className="mt-1.5 w-full h-1 bg-gray-100 rounded-full overflow-hidden">
+                      <div className="h-full bg-orange-400 rounded-full" style={{ width: `${percent}%` }} />
+                    </div>
+                    <p className="text-[10px] text-gray-400 mt-0.5">
+                      ₹{raised} raised · {c.summary.successfulContributionCount} supporter{c.summary.successfulContributionCount !== 1 ? 's' : ''}
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Delivery Time Slot */}
       <div className="bg-white rounded-2xl pt-4 pb-3 shadow-sm mb-4">
         <h3 className="text-sm font-semibold text-gray-800 mb-3 px-4 flex items-center gap-2">
@@ -531,6 +605,11 @@ export function CheckoutPage() {
       {/* Payment note */}
       <div className="bg-orange-50 border border-orange-100 rounded-2xl p-3 mb-4 text-sm text-orange-700">
         💳 Payment will be collected at the time of delivery (Cash / UPI)
+        {selectedCampaign && (
+          <p className="mt-1 text-xs text-orange-600">
+            ❤️ Includes ₹{paiseToRupees(selectedCampaign.costAmount)} contribution to "{selectedCampaign.name}"
+          </p>
+        )}
       </div>
 
       {error && (

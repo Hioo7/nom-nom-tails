@@ -48,6 +48,7 @@ export async function clearAll(): Promise<void> {
   await prisma.orderItem.deleteMany();
   await prisma.order.deleteMany();
   await prisma.subscription.deleteMany();
+  await prisma.cartItem.deleteMany();
   await prisma.mealPlanDish.deleteMany();
   await prisma.dishIngredient.deleteMany();
   await prisma.mealPlan.deleteMany();
