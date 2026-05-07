@@ -20,7 +20,7 @@ RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
 
 # Install production deps + tsx/esbuild (for seed.ts at startup)
 COPY package*.json ./
-RUN npm ci --omit=dev && npm install --no-save tsx esbuild
+RUN npm ci --omit=dev && npm install --no-save tsx esbuild dotenv
 
 # Generated Prisma client (overwrite with builder's generated version)
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
