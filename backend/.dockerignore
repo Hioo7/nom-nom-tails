@@ -4,5 +4,4 @@ dist
 .env.*
 *.md
 prisma/media_seed
-prisma/seed.ts
 prisma/seed

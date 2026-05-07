@@ -30,11 +30,18 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY --from=builder /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
 COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
 
+# tsx (needed for running seed.ts at startup)
+COPY --from=builder /app/node_modules/.bin/tsx ./node_modules/.bin/tsx
+COPY --from=builder /app/node_modules/tsx ./node_modules/tsx
+
 # Generated Prisma client
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
 # Built app
 COPY --from=builder /app/dist ./dist
+
+# Source files (needed for tsx to resolve imports when running seed.ts)
+COPY --from=builder /app/src ./src
 
 # Prisma schema and migrations (needed for migrate deploy)
 COPY --from=builder /app/prisma ./prisma
