@@ -39,6 +39,10 @@ COPY --from=builder /app/dist ./dist
 # Prisma schema and migrations (needed for migrate deploy)
 COPY --from=builder /app/prisma ./prisma
 
+# Prisma config (needed for datasource URL resolution at runtime)
+COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
+COPY --from=builder /app/node_modules/dotenv ./node_modules/dotenv
+
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
