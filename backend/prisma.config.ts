@@ -6,7 +6,7 @@ config({ path: resolve(__dirname, '../.env') });
 
 export default defineConfig({
   migrations: {
-    seed: 'tsx prisma/seed.ts',
+    seed: 'npx tsx ./prisma/seed.ts',
   },
   datasource: {
     url: env('DATABASE_URL'),
