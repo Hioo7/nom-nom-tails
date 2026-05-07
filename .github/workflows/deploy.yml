@@ -110,6 +110,12 @@ jobs:
           envs: ENV_PROD,DOCKER_USERNAME,DOCKER_PASSWORD
           script: |
             set -e
+
+            # Install Docker Compose plugin if not available
+            if ! docker compose version > /dev/null 2>&1; then
+              apt-get update -qq && apt-get install -y -qq docker-compose-plugin
+            fi
+
             cd /root/nom-nom-tails
 
             # Pull latest compose config
