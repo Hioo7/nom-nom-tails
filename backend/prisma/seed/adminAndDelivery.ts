@@ -21,6 +21,7 @@ export async function seedAdminAndDelivery(): Promise<StaffResult> {
     },
   });
 
+  
   const deliveryPartner1 = await prisma.user.create({
     data: {
       email: 'delivery1@dogdash.com',

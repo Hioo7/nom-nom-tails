@@ -1,6 +1,6 @@
 import type { ApiError as ApiErrorData, ApiErrorResponse, ApiSuccessResponse } from '../types';
 
-export const BASE_URL = import.meta.env.VITE_API_URL ?? '';
+export const BASE_URL = import.meta.env.VITE_API_URL ?? 'https://api.nomnomtails.com';
 
 export class ApiError extends Error implements ApiErrorData {
   readonly fields?: ApiErrorData['fields'];
