@@ -1,0 +1,129 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-backend:
+    name: Build & Push Backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push backend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: ${{ github.event_name == 'push' }}
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/nom-nom-tails-backend:latest
+            ${{ secrets.DOCKER_USERNAME }}/nom-nom-tails-backend:${{ github.sha }}
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,scope=backend,mode=max
+
+  build-client-app:
+    name: Build & Push Client App
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push client-app
+        uses: docker/build-push-action@v6
+        with:
+          context: ./client-app
+          push: ${{ github.event_name == 'push' }}
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/nom-nom-tails-client-app:latest
+            ${{ secrets.DOCKER_USERNAME }}/nom-nom-tails-client-app:${{ github.sha }}
+          build-args: |
+            VITE_API_URL=${{ secrets.VITE_API_URL }}
+            VITE_GOOGLE_MAPS_API_KEY=${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
+          cache-from: type=gha,scope=client-app
+          cache-to: type=gha,scope=client-app,mode=max
+
+  build-vendor-app:
+    name: Build & Push Vendor App
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push vendor-app
+        uses: docker/build-push-action@v6
+        with:
+          context: ./vendor-app
+          push: ${{ github.event_name == 'push' }}
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/nom-nom-tails-vendor-app:latest
+            ${{ secrets.DOCKER_USERNAME }}/nom-nom-tails-vendor-app:${{ github.sha }}
+          build-args: |
+            VITE_API_URL=${{ secrets.VITE_API_URL }}
+          cache-from: type=gha,scope=vendor-app
+          cache-to: type=gha,scope=vendor-app,mode=max
+
+  deploy:
+    name: Deploy to VPS
+    needs: [build-backend, build-client-app, build-vendor-app]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        env:
+          ENV_PROD: ${{ secrets.ENV_PROD }}
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: ENV_PROD,DOCKER_USERNAME,DOCKER_PASSWORD
+          script: |
+            set -e
+            cd /opt/nom-nom-tails
+
+            # Pull latest compose config
+            git pull origin main
+
+            # Write production env file
+            printf '%s\n' "$ENV_PROD" > .env
+
+            # Log in to Docker Hub
+            echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+
+            # Pull latest images and restart
+            docker compose pull
+            docker compose up -d --remove-orphans
+
+            # Clean up dangling images
+            docker image prune -f

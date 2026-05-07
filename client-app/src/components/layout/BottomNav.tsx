@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { FiHome, FiStar, FiShoppingCart, FiUser } from 'react-icons/fi';
+import { GiPawPrint } from 'react-icons/gi';
 import { useCart } from '../../hooks/useCart';
 
 export function BottomNav() {
@@ -9,12 +10,15 @@ export function BottomNav() {
     { to: '/', label: 'Home', icon: <FiHome size={22} /> },
     { to: '/premium', label: 'Premium', icon: <FiStar size={22} /> },
     { to: '/cart', label: 'Cart', icon: <FiShoppingCart size={22} />, badge: totalItems },
+    { to: '/kindness', label: 'Kindness', icon: <GiPawPrint size={22} /> },
     { to: '/profile', label: 'Account', icon: <FiUser size={22} /> },
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 flex"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+    <nav
+      className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 flex"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+    >
       {tabs.map((tab) => (
         <NavLink
           key={tab.to}

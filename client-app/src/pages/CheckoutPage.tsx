@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   FiArrowLeft, FiMapPin, FiClock, FiCheck,
@@ -9,7 +9,7 @@ import { useAuth } from '../hooks/useAuth';
 import { OrderService } from '../services/order.service';
 import { TimeSlotService } from '../services/timeslot.service';
 import { CampaignService } from '../services/campaign.service';
-import type { TimeSlot, SafeCustomerCampaign } from '../types';
+import type { TimeSlot, SafeCustomerCampaign, Order } from '../types';
 import {
   formatAddress,
   type StoredAddress,
@@ -109,6 +109,8 @@ export function CheckoutPage() {
   const [timeSlots, setTimeSlots] = useState<TimeSlot[] | null>(null);
   const slotsLoading = !!token && timeSlots === null;
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
+  const [slotPickerOpen, setSlotPickerOpen] = useState(false);
+  const [slotPickerDay, setSlotPickerDay] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [orderId, setOrderId] = useState('');
@@ -116,9 +118,15 @@ export function CheckoutPage() {
   const [campaigns, setCampaigns] = useState<SafeCustomerCampaign[]>([]);
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
 
+  const [kindnessLifetime, setKindnessLifetime] = useState(0);
+  const [kindnessOrderCount, setKindnessOrderCount] = useState(0);
+  const [kindnessFromOrder, setKindnessFromOrder] = useState(0);
+  const kindnessCardRef = useRef<HTMLDivElement>(null);
+
   const deliveryFee = 40;
   const selectedCampaign = campaigns.find((c) => c.id === selectedCampaignId) ?? null;
   const grandTotal = paiseToRupees(totalPrice) + deliveryFee + (selectedCampaign ? paiseToRupees(selectedCampaign.costAmount) : 0);
+  const kindnessFromCurrentOrder = Math.round(paiseToRupees(totalPrice) * 0.05);
 
   useEffect(() => {
     if (!token) return;
@@ -130,6 +138,15 @@ export function CheckoutPage() {
         setError('Failed to load delivery slots. Please refresh.');
       });
     campaignService.list(token).then(setCampaigns).catch(() => {});
+    orderService.listMine(token).then((orders: Order[]) => {
+      let total = 0;
+      for (const o of orders) {
+        const items = o.items.reduce((s, i) => s + i.dish.price * i.quantity, 0);
+        total += Math.round(paiseToRupees(items) * 0.05);
+      }
+      setKindnessLifetime(total);
+      setKindnessOrderCount(orders.length);
+    }).catch(() => {});
   }, [token]);
 
   // Auto-select first address; allow manual override
@@ -221,6 +238,7 @@ export function CheckoutPage() {
         }
       }
       setOrderId(order.id);
+      setKindnessFromOrder(kindnessFromCurrentOrder);
       clearCart();
       setStep('success');
     } catch (err: unknown) {
@@ -231,22 +249,199 @@ export function CheckoutPage() {
   };
 
   if (step === 'success') {
+    const newLifetime = kindnessLifetime + kindnessFromOrder;
+    const pct = Math.min(100, Math.round((newLifetime / 5000) * 100));
+    const dogsHelped = Math.max(1, Math.floor(newLifetime / 100));
+    const firstName = token ? (items[0]?.dish?.name ? '' : '') : '';
+    void firstName;
+
+    const drawKindnessBadge = (): Promise<Blob | null> => {
+      const W = 640, H = 380;
+      const cvs = document.createElement('canvas');
+      cvs.width = W; cvs.height = H;
+      const c = cvs.getContext('2d');
+      if (!c) return Promise.resolve(null);
+
+      // Rounded rect helper
+      const rr = (x: number, y: number, w: number, h: number, r: number) => {
+        c.beginPath();
+        c.moveTo(x + r, y);
+        c.lineTo(x + w - r, y);
+        c.quadraticCurveTo(x + w, y, x + w, y + r);
+        c.lineTo(x + w, y + h - r);
+        c.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        c.lineTo(x + r, y + h);
+        c.quadraticCurveTo(x, y + h, x, y + h - r);
+        c.lineTo(x, y + r);
+        c.quadraticCurveTo(x, y, x + r, y);
+        c.closePath();
+      };
+
+      // Background gradient
+      const bg = c.createLinearGradient(0, 0, W, H);
+      bg.addColorStop(0, '#0a0a0a'); bg.addColorStop(0.6, '#1a0800'); bg.addColorStop(1, '#2d1000');
+      rr(0, 0, W, H, 24); c.fillStyle = bg; c.fill();
+
+      // Header label
+      c.fillStyle = '#f97316'; c.font = 'bold 12px system-ui';
+      c.fillText('NOM NOM TAILS · KINDNESS METER', 32, 42);
+
+      // Main headline
+      c.fillStyle = '#ffffff'; c.font = 'bold 26px system-ui';
+      c.fillText(`Raised \u20B9${newLifetime.toLocaleString('en-IN')} for stray dogs`, 32, 84);
+
+      c.fillStyle = 'rgba(251,146,60,0.85)'; c.font = '15px system-ui';
+      c.fillText(`+\u20B9${kindnessFromOrder} contributed from this order`, 32, 110);
+
+      // Progress bar
+      rr(32, 132, W - 64, 10, 5); c.fillStyle = 'rgba(255,255,255,0.1)'; c.fill();
+      rr(32, 132, Math.max(16, (W - 64) * pct / 100), 10, 5); c.fillStyle = '#f97316'; c.fill();
+      c.fillStyle = 'rgba(255,255,255,0.3)'; c.font = '11px system-ui';
+      c.fillText(`${pct}% of monthly rescue goal`, 32, 158);
+
+      // Stat boxes
+      const stats = [
+        { label: 'Total Raised', value: `\u20B9${newLifetime.toLocaleString('en-IN')}`, color: '#fb923c' },
+        { label: 'Orders Made', value: String(kindnessOrderCount + 1), color: '#fbbf24' },
+        { label: 'Dogs Helped', value: `~${dogsHelped}`, color: '#4ade80' },
+      ];
+      const bw = (W - 80) / 3;
+      stats.forEach((s, i) => {
+        const bx = 32 + i * (bw + 8);
+        rr(bx, 176, bw, 78, 12); c.fillStyle = 'rgba(255,255,255,0.07)'; c.fill();
+        c.fillStyle = s.color; c.font = 'bold 20px system-ui'; c.textAlign = 'center';
+        c.fillText(s.value, bx + bw / 2, 216);
+        c.fillStyle = 'rgba(251,146,60,0.6)'; c.font = '11px system-ui';
+        c.fillText(s.label, bx + bw / 2, 238);
+      });
+      c.textAlign = 'left';
+
+      // Impact message box
+      rr(32, 274, W - 64, 66, 12); c.fillStyle = 'rgba(255,255,255,0.07)'; c.fill();
+      c.fillStyle = '#fff7ed'; c.font = '13px system-ui';
+      c.fillText(`Your \u20B9${kindnessFromOrder} just helped fund care for a stray dog in Bangalore.`, 48, 302);
+      c.fillStyle = 'rgba(251,146,60,0.7)'; c.font = 'bold 12px system-ui';
+      c.fillText('#NomNomTails  #KindnessMeter', 48, 324);
+
+      // Branding
+      c.fillStyle = 'rgba(251,146,60,0.35)'; c.font = '11px system-ui';
+      c.textAlign = 'right'; c.fillText('nom-nom-tails.com', W - 32, H - 14);
+
+      return new Promise<Blob | null>((resolve) => cvs.toBlob(resolve, 'image/png'));
+    };
+
+    const handleShare = async () => {
+      const blob = await drawKindnessBadge();
+
+      if (blob) {
+        const file = new File([blob], 'kindness-badge.png', { type: 'image/png' });
+        // Web Share API with image (Android Chrome, iOS Safari 15+)
+        if (navigator.canShare?.({ files: [file] })) {
+          try {
+            await navigator.share({
+              files: [file],
+              title: 'My Kindness Badge',
+              text: `I just raised \u20B9${newLifetime} for stray dogs! #NomNomTails`,
+            });
+            return;
+          } catch { /* cancelled */ }
+        }
+        // macOS / desktop — download the image
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = 'kindness-badge.png'; a.click();
+        URL.revokeObjectURL(url);
+        return;
+      }
+
+      // Last resort: text share
+      const text = `I just contributed \u20B9${kindnessFromOrder} to stray dog rescue through Nom Nom Tails! #NomNomTails`;
+      if (navigator.share) await navigator.share({ text }).catch(() => {});
+    };
+
     return (
-      <div className="max-w-lg mx-auto px-4 flex flex-col items-center justify-center min-h-[80vh] text-center">
-        <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mb-4">
-          <FiCheck size={36} className="text-green-500" />
+      <div className="min-h-screen bg-orange-50">
+        <div className="max-w-sm mx-auto flex flex-col">
+        {/* Top hero */}
+        <div className="flex flex-col items-center pt-12 pb-6 px-4">
+          <div className="w-20 h-20 rounded-full bg-orange-500 flex items-center justify-center mb-4 shadow-lg shadow-orange-200">
+            <FiCheck size={36} className="text-white" strokeWidth={3} />
+          </div>
+          <h2 className="text-2xl font-black text-gray-900 mb-1">Order Placed! 🎉</h2>
+          <p className="text-gray-500 text-sm mb-0.5">Estimated delivery: 30–45 mins</p>
+          <p className="text-gray-400 text-xs font-mono">
+            Order ID: {orderId.slice(0, 12)}…
+          </p>
         </div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Order Placed! 🎉</h2>
-        <p className="text-gray-500 text-sm mb-1">Your order has been confirmed.</p>
-        <p className="text-gray-400 text-xs mb-6">
-          Order ID: <span className="font-mono text-gray-600">{orderId.slice(0, 12)}…</span>
-        </p>
-        <button
-          onClick={() => navigate('/')}
-          className="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-8 py-3 rounded-2xl transition-colors"
-        >
-          Back to Home
-        </button>
+
+        {/* Kindness Meter card */}
+        <div ref={kindnessCardRef} className="mx-4 rounded-3xl overflow-hidden mb-5" style={{ background: 'linear-gradient(145deg, #0a0a0a 0%, #1a0800 60%, #2d1000 100%)' }}>
+          <div className="p-5">
+            {/* Header row */}
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-11 h-11 bg-orange-500 rounded-xl flex items-center justify-center text-xl flex-shrink-0">
+                🌱
+              </div>
+              <div>
+                <p className="font-bold text-white text-sm">Your Kindness Meter</p>
+                <p className="text-xs text-orange-300">You just made a difference!</p>
+              </div>
+            </div>
+
+            {/* Progress */}
+            <p className="text-xs text-orange-300 mb-1.5">
+              Total impact: ₹{newLifetime.toLocaleString('en-IN')} raised ({pct}% to monthly goal)
+            </p>
+            <div className="w-full h-2.5 rounded-full overflow-hidden mb-4" style={{ background: 'rgba(255,255,255,0.1)' }}>
+              <div
+                className="h-full bg-orange-500 rounded-full"
+                style={{ width: `${pct}%`, transition: 'width 1.2s ease-out' }}
+              />
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-3 gap-2 mb-4">
+              {[
+                { label: 'Total Raised', value: `₹${newLifetime.toLocaleString('en-IN')}`, color: 'text-orange-400' },
+                { label: 'Orders Made', value: String(kindnessOrderCount + 1), color: 'text-amber-400' },
+                { label: 'Dogs Helped', value: `~${dogsHelped}`, color: 'text-green-400' },
+              ].map((s) => (
+                <div key={s.label} className="rounded-xl p-2.5 text-center" style={{ background: 'rgba(255,255,255,0.07)' }}>
+                  <p className={`text-sm font-black ${s.color}`}>{s.value}</p>
+                  <p className="text-[10px] text-orange-400/70 mt-0.5">{s.label}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Impact message */}
+            <div className="rounded-xl p-3" style={{ background: 'rgba(255,255,255,0.07)' }}>
+              <p className="text-xs text-orange-100 leading-relaxed">
+                🐕{' '}
+                <span className="text-orange-400 font-bold">
+                  Your ₹{kindnessFromOrder} from this order
+                </span>{' '}
+                just helped fund care for a stray dog in Bangalore. Thank you!
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Action buttons */}
+        <div className="px-4 flex flex-col gap-3">
+          <button
+            onClick={handleShare}
+            className="w-full border-2 border-orange-500 text-orange-500 font-bold py-4 rounded-2xl text-sm transition-colors hover:bg-orange-50"
+          >
+            🏅 Share My Kindness Badge
+          </button>
+          <button
+            onClick={() => navigate('/orders')}
+            className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 rounded-2xl transition-colors text-sm"
+          >
+            📦 Track My Order
+          </button>
+        </div>
+        </div>
       </div>
     );
   }
@@ -453,6 +648,24 @@ export function CheckoutPage() {
         </div>
       </div>
 
+      {/* Kindness Contribution */}
+      <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4 mb-4">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-lg">🌱</span>
+          <h3 className="text-sm font-bold text-orange-700">Your Kindness Contribution</h3>
+        </div>
+        <div className="flex items-baseline gap-1 mb-0.5">
+          <span className="text-2xl font-black text-gray-900">₹{kindnessFromCurrentOrder}</span>
+          <span className="text-xs text-gray-500">from this order → stray dog rescue 🐕</span>
+        </div>
+        <p className="text-[11px] text-gray-400 mt-0.5">5% of every order is donated automatically — no extra charge</p>
+        {kindnessLifetime > 0 && (
+          <p className="text-xs text-orange-600 font-bold mt-2">
+            You've raised ₹{kindnessLifetime.toLocaleString('en-IN')} total! 🐾
+          </p>
+        )}
+      </div>
+
       {/* Campaign contribution */}
       {campaigns.length > 0 && (
         <div className="bg-white rounded-2xl shadow-sm mb-4 overflow-hidden">
@@ -515,92 +728,87 @@ export function CheckoutPage() {
       )}
 
       {/* Delivery Time Slot */}
-      <div className="bg-white rounded-2xl pt-4 pb-3 shadow-sm mb-4">
-        <h3 className="text-sm font-semibold text-gray-800 mb-3 px-4 flex items-center gap-2">
-          <FiClock size={15} className="text-orange-500" /> Delivery Time Slot
-        </h3>
+      {(() => {
+        const uniqueDays = [...new Set((timeSlots ?? []).map((s) => s.day))]
+          .map((day) => ({
+            day,
+            slots: (timeSlots ?? []).filter((s) => s.day === day),
+          }))
+          .sort((a, b) => daysUntilNext(a.day) - daysUntilNext(b.day));
 
-        {slotsLoading ? (
-          <div className="flex items-center justify-center py-4 gap-2 text-gray-400 text-sm px-4">
-            <FiLoader size={14} className="animate-spin" /> Loading slots…
+        const selectedSlot = (timeSlots ?? []).find((s) => s.id === selectedSlotId);
+
+        return (
+          <div className="bg-white rounded-2xl pt-4 pb-4 shadow-sm mb-4">
+            <h3 className="text-sm font-semibold text-gray-800 mb-3 px-4 flex items-center gap-2">
+              <FiClock size={15} className="text-orange-500" /> Delivery Time Slot
+            </h3>
+
+            {slotsLoading ? (
+              <div className="flex items-center justify-center py-4 gap-2 text-gray-400 text-sm px-4">
+                <FiLoader size={14} className="animate-spin" /> Loading slots…
+              </div>
+            ) : (timeSlots ?? []).length === 0 ? (
+              <p className="text-xs text-gray-400 text-center py-2 px-4">No delivery slots available right now.</p>
+            ) : (
+              <>
+                {/* Selected slot summary */}
+                {selectedSlot && (
+                  <div className="mx-4 mb-3 px-3 py-2.5 bg-orange-50 border border-orange-200 rounded-xl flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-gray-500">
+                        {DAY_LABEL[selectedSlot.day]},{' '}
+                        {new Date(nextDateForDay(selectedSlot.day) + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                      </p>
+                      <p className="text-sm font-bold text-orange-600">
+                        {selectedSlot.startTime} – {selectedSlot.endTime}
+                      </p>
+                    </div>
+                    <FiCheck size={16} className="text-orange-500" />
+                  </div>
+                )}
+
+                {/* Compact date chips */}
+                <div className="flex gap-2 px-4 overflow-x-auto scrollbar-hide" style={{ scrollSnapType: 'x mandatory' }}>
+                  {uniqueDays.map(({ day, slots }) => {
+                    const allDisabled = slots.every((s) => !s.isActive || daysUntilNext(s.day) < MIN_DAYS_AHEAD);
+                    const hasSelected = slots.some((s) => s.id === selectedSlotId);
+                    const dateFormatted = new Date(nextDateForDay(day) + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+
+                    return (
+                      <button
+                        key={day}
+                        disabled={allDisabled}
+                        onClick={() => { setSlotPickerDay(day); setSlotPickerOpen(true); }}
+                        style={{ scrollSnapAlign: 'start' }}
+                        className={`relative flex-shrink-0 flex flex-col items-center px-4 py-2 rounded-xl border-2 transition-all ${
+                          allDisabled
+                            ? 'border-gray-100 bg-gray-50 opacity-40 cursor-not-allowed'
+                            : hasSelected
+                            ? 'border-orange-400 bg-orange-50'
+                            : 'border-gray-200 bg-white hover:border-orange-300'
+                        }`}
+                      >
+                        {hasSelected && (
+                          <div className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-orange-500 rounded-full flex items-center justify-center">
+                            <FiCheck size={8} className="text-white" strokeWidth={3} />
+                          </div>
+                        )}
+                        <span className={`text-sm font-bold leading-tight ${allDisabled ? 'text-gray-400' : hasSelected ? 'text-orange-500' : 'text-gray-800'}`}>
+                          {DAY_LABEL[day]}
+                        </span>
+                        <span className={`text-xs ${allDisabled ? 'text-gray-300' : 'text-gray-500'}`}>
+                          {dateFormatted}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
           </div>
-        ) : (timeSlots ?? []).length === 0 ? (
-          <p className="text-xs text-gray-400 text-center py-2 px-4">No delivery slots available right now.</p>
-        ) : (
-          <div className="flex gap-3 overflow-x-auto px-4 pb-1 scrollbar-hide"
-               style={{ scrollSnapType: 'x mandatory' }}>
-            {[...(timeSlots ?? [])]
-              .sort((a, b) => {
-                const aDisabled = !a.isActive || daysUntilNext(a.day) < MIN_DAYS_AHEAD;
-                const bDisabled = !b.isActive || daysUntilNext(b.day) < MIN_DAYS_AHEAD;
-                if (aDisabled !== bDisabled) return aDisabled ? 1 : -1;
-                return daysUntilNext(a.day) - daysUntilNext(b.day);
-              })
-              .map((slot) => {
-                const days = daysUntilNext(slot.day);
-                const tooSoon = days < MIN_DAYS_AHEAD;
-                const disabled = !slot.isActive || tooSoon;
-                const isSelected = slot.id === selectedSlotId && !disabled;
-                const date = nextDateForDay(slot.day);
-                const dateFormatted = new Date(date + 'T00:00:00').toLocaleDateString('en-IN', {
-                  day: 'numeric', month: 'short',
-                });
-
-                return (
-                  <button
-                    key={slot.id}
-                    disabled={disabled}
-                    onClick={() => !disabled && setSelectedSlotId(slot.id)}
-                    style={{ scrollSnapAlign: 'start', minWidth: '110px' }}
-                    className={`flex-shrink-0 flex flex-col items-center justify-center gap-1 rounded-2xl px-3 py-3 border-2 transition-all relative ${
-                      disabled
-                        ? 'border-gray-100 bg-gray-50 opacity-40 cursor-not-allowed'
-                        : isSelected
-                        ? 'border-orange-400 bg-orange-50 shadow-sm'
-                        : 'border-gray-100 bg-white hover:border-orange-200'
-                    }`}
-                  >
-                    {/* Selected tick */}
-                    {isSelected && (
-                      <div className="absolute -top-2 -right-2 w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center shadow">
-                        <FiCheck size={10} className="text-white" strokeWidth={3} />
-                      </div>
-                    )}
-
-                    {/* Day */}
-                    <span className={`text-base font-bold leading-none ${disabled ? 'text-gray-400' : isSelected ? 'text-orange-500' : 'text-gray-800'}`}>
-                      {DAY_LABEL[slot.day]}
-                    </span>
-
-                    {/* Date */}
-                    <span className={`text-xs font-medium ${disabled ? 'text-gray-300' : 'text-gray-500'}`}>
-                      {dateFormatted}
-                    </span>
-
-                    {/* Divider */}
-                    <div className={`w-8 h-px my-0.5 ${disabled ? 'bg-gray-200' : isSelected ? 'bg-orange-300' : 'bg-gray-200'}`} />
-
-                    {/* Time */}
-                    <span className={`text-xs font-semibold text-center leading-tight ${disabled ? 'text-gray-300' : isSelected ? 'text-orange-600' : 'text-gray-600'}`}>
-                      {slot.startTime}
-                    </span>
-                    <span className={`text-xs ${disabled ? 'text-gray-300' : 'text-gray-400'}`}>
-                      to {slot.endTime}
-                    </span>
-
-                    {/* Status badge */}
-                    {!slot.isActive && (
-                      <span className="mt-1 text-[10px] text-red-400 font-medium leading-none">Off</span>
-                    )}
-                    {slot.isActive && tooSoon && (
-                      <span className="mt-1 text-[10px] text-gray-400 font-medium leading-none">Soon</span>
-                    )}
-                  </button>
-                );
-              })}
-          </div>
-        )}
-      </div>
+        );
+      })()}
 
       {/* Payment note */}
       <div className="bg-orange-50 border border-orange-100 rounded-2xl p-3 mb-4 text-sm text-orange-700">
@@ -625,6 +833,68 @@ export function CheckoutPage() {
       >
         {loading ? 'Placing order…' : `Place Order · ₹${grandTotal}`}
       </button>
+
+      {/* Time slot picker bottom sheet */}
+      {slotPickerOpen && slotPickerDay && (
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center"
+          onClick={() => setSlotPickerOpen(false)}
+        >
+          <div
+            className="bg-white w-full max-w-lg rounded-t-3xl px-5 pt-4"
+            style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 80px)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Drag handle */}
+            <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-5" />
+
+            <h3 className="text-base font-bold text-gray-900 mb-0.5">Select Delivery Time</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              {DAY_LABEL[slotPickerDay]},{' '}
+              {new Date(nextDateForDay(slotPickerDay) + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'long' })}
+            </p>
+
+            <div className="flex flex-col gap-3 overflow-y-auto max-h-[45vh]">
+              {(timeSlots ?? [])
+                .filter((s) => s.day === slotPickerDay)
+                .map((slot) => {
+                  const disabled = !slot.isActive || daysUntilNext(slot.day) < MIN_DAYS_AHEAD;
+                  const isSelected = slot.id === selectedSlotId;
+                  return (
+                    <button
+                      key={slot.id}
+                      disabled={disabled}
+                      onClick={() => { setSelectedSlotId(slot.id); setSlotPickerOpen(false); }}
+                      className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl border-2 transition-all ${
+                        disabled
+                          ? 'border-gray-100 bg-gray-50 opacity-40 cursor-not-allowed'
+                          : isSelected
+                          ? 'border-orange-400 bg-orange-50'
+                          : 'border-gray-200 hover:border-orange-300'
+                      }`}
+                    >
+                      <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors ${
+                        isSelected ? 'border-orange-500 bg-orange-500' : 'border-gray-300'
+                      }`}>
+                        {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
+                      </div>
+                      <div className="flex-1 text-left">
+                        <p className={`text-sm font-bold ${disabled ? 'text-gray-400' : isSelected ? 'text-orange-600' : 'text-gray-800'}`}>
+                          {slot.startTime} – {slot.endTime}
+                        </p>
+                        {!slot.isActive && <p className="text-xs text-red-400 mt-0.5">Not available</p>}
+                        {slot.isActive && daysUntilNext(slot.day) < MIN_DAYS_AHEAD && (
+                          <p className="text-xs text-gray-400 mt-0.5">Too soon to schedule</p>
+                        )}
+                      </div>
+                      {isSelected && <FiCheck size={16} className="text-orange-500 flex-shrink-0" />}
+                    </button>
+                  );
+                })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

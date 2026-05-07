@@ -1,17 +1,20 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { FiSearch, FiMapPin, FiChevronDown } from 'react-icons/fi';
 import { DishCard } from '../components/ui/DishCard';
-import { CampaignCard } from '../components/ui/CampaignCard';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { LocationPicker } from '../components/ui/LocationPicker';
 import { DishService } from '../services/dish.service';
-import { CampaignService } from '../services/campaign.service';
+// import { CampaignService } from '../services/campaign.service';
 import { useAuth } from '../hooks/useAuth';
 import { useGpsLocation } from '../hooks/useGpsLocation';
-import type { Dish, SafeCustomerCampaign } from '../types';
+// import { paiseToRupees } from '../utils/currency';
+import type { Dish } from '../types';
+
+// TODO: re-enable InlineCampaignBanner once redesigned
+// function InlineCampaignBanner({ campaign }: { campaign: SafeCustomerCampaign }) { ... }
 
 const dishService = new DishService();
-const campaignService = new CampaignService();
+// const campaignService = new CampaignService();
 
 export function HomePage() {
   const { user, token } = useAuth();
@@ -20,7 +23,7 @@ export function HomePage() {
   const [error, setError] = useState('');
   const [query, setQuery] = useState('');
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [campaigns, setCampaigns] = useState<SafeCustomerCampaign[]>([]);
+  // const [campaigns, setCampaigns] = useState<SafeCustomerCampaign[]>([]);
 
   const { status, location, requestLocation, setManualLocation } = useGpsLocation(token);
 
@@ -32,10 +35,10 @@ export function HomePage() {
       .finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => {
-    if (!token) return;
-    campaignService.list(token).then(setCampaigns).catch(() => {});
-  }, [token]);
+  // useEffect(() => {
+  //   if (!token) return;
+  //   campaignService.list(token).then(setCampaigns).catch(() => {});
+  // }, [token]);
 
   const filtered = dishes.filter(
     (d) =>
@@ -91,28 +94,6 @@ export function HomePage() {
           />
         </div>
 
-        {/* Campaigns */}
-        {campaigns.length > 0 && (
-          <div className="mb-5 -mx-4">
-            <div className="px-4 flex items-center justify-between mb-2.5">
-              <div>
-                <h2 className="text-sm font-bold text-gray-900">Support a Cause 🐶</h2>
-                <p className="text-xs text-gray-400">Help feed animals in need</p>
-              </div>
-            </div>
-            <div
-              className="flex gap-3 overflow-x-auto px-4 pb-1 scrollbar-hide"
-              style={{ scrollSnapType: 'x mandatory' }}
-            >
-              {campaigns.map((c) => (
-                <div key={c.id} style={{ scrollSnapAlign: 'start' }}>
-                  <CampaignCard campaign={c} />
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Content */}
         {loading ? (
           <LoadingSpinner fullPage />
@@ -120,10 +101,7 @@ export function HomePage() {
           <div className="text-center py-16">
             <p className="text-4xl mb-3">🐾</p>
             <p className="text-gray-500">{error}</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="mt-4 text-orange-500 font-medium"
-            >
+            <button onClick={() => window.location.reload()} className="mt-4 text-orange-500 font-medium">
               Retry
             </button>
           </div>
@@ -135,11 +113,24 @@ export function HomePage() {
         ) : (
           <>
             <p className="text-xs text-gray-400 mb-3">{filtered.length} items available</p>
-            <div className="grid grid-cols-2 gap-3">
-              {filtered.map((dish) => (
-                <DishCard key={dish.id} dish={dish} />
-              ))}
-            </div>
+            {(() => {
+              const CHUNK = 2;
+              const nodes: React.ReactNode[] = [];
+              for (let i = 0; i < filtered.length; i += CHUNK) {
+                const chunk = filtered.slice(i, i + CHUNK);
+                nodes.push(
+                  <div key={`dishes-${i}`} className="grid grid-cols-2 gap-3 mb-3">
+                    {chunk.map((dish) => <DishCard key={dish.id} dish={dish} />)}
+                  </div>
+                );
+                // TODO: re-enable campaign banners once redesigned
+                // if (campaigns.length > 0) {
+                //   const campaign = campaigns[Math.floor(i / CHUNK) % campaigns.length];
+                //   nodes.push(<InlineCampaignBanner key={`campaign-${i}`} campaign={campaign} />);
+                // }
+              }
+              return nodes;
+            })()}
           </>
         )}
       </div>

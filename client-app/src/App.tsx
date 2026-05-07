@@ -16,6 +16,7 @@ import { ShippingAddressPage } from './pages/ShippingAddressPage';
 import { NotificationsPage } from './pages/NotificationsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { SubscriptionCheckoutPage } from './pages/SubscriptionCheckoutPage';
+import { KindnessMeterPage } from './pages/KindnessMeterPage';
 
 export default function App() {
   return (
@@ -41,6 +42,7 @@ export default function App() {
                 <Route index element={<HomePage />} />
                 <Route path="/premium" element={<PremiumPage />} />
                 <Route path="/cart" element={<CartPage />} />
+                <Route path="/kindness" element={<KindnessMeterPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/checkout" element={<CheckoutPage />} />
               </Route>

@@ -1,6 +1,7 @@
 services:
   postgres:
     image: postgres:16-alpine
+    restart: unless-stopped
     env_file: .env
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
@@ -8,6 +9,8 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - internal
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
@@ -15,7 +18,8 @@ services:
       retries: 5
 
   minio:
-    image: minio/minio:latest
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    restart: unless-stopped
     env_file: .env
     environment:
       MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
@@ -26,6 +30,8 @@ services:
       - "9001:9001"
     volumes:
       - minio_data:/data
+    networks:
+      - internal
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
       interval: 10s
@@ -33,9 +39,11 @@ services:
       retries: 5
 
   backend:
+    image: ${DOCKER_USERNAME}/nom-nom-tails-backend:latest
     build:
       context: ./backend
       dockerfile: Dockerfile
+    restart: unless-stopped
     env_file: .env
     ports:
       - "3000:3000"
@@ -44,24 +52,46 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+    networks:
+      - internal
+      - public
 
   client-app:
+    image: ${DOCKER_USERNAME}/nom-nom-tails-client-app:latest
     build:
       context: ./client-app
       dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL}
+        VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY}
+    restart: unless-stopped
     ports:
       - "5173:80"
     depends_on:
       - backend
+    networks:
+      - public
 
   vendor-app:
+    image: ${DOCKER_USERNAME}/nom-nom-tails-vendor-app:latest
     build:
       context: ./vendor-app
       dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL}
+    restart: unless-stopped
     ports:
       - "5174:80"
     depends_on:
       - backend
+    networks:
+      - public
+
+networks:
+  internal:
+    driver: bridge
+  public:
+    driver: bridge
 
 volumes:
   postgres_data:
