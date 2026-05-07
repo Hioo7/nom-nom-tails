@@ -46,3 +46,4 @@ USER nodejs
 EXPOSE 3000
 
 ENTRYPOINT ["dumb-init", "--", "/bin/sh", "/entrypoint.sh"]
+

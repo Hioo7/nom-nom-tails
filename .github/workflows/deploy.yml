@@ -110,7 +110,7 @@ jobs:
           envs: ENV_PROD,DOCKER_USERNAME,DOCKER_PASSWORD
           script: |
             set -e
-            cd /opt/nom-nom-tails
+            cd /root/nom-nom-tails
 
             # Pull latest compose config
             git pull origin main
