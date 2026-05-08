@@ -9,3 +9,13 @@ export const RecordSettlementPaymentSchema = z.object({
 });
 
 export type RecordSettlementPaymentInput = z.infer<typeof RecordSettlementPaymentSchema>;
+
+export const FulfillOrderSchema = z.object({
+  handlingNotes: z
+    .string()
+    .trim()
+    .max(500, 'Handling notes must be 500 characters or fewer')
+    .optional(),
+});
+
+export type FulfillOrderInput = z.infer<typeof FulfillOrderSchema>;

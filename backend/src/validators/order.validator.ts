@@ -1,4 +1,6 @@
 import {
+  FulfillOrderInput,
+  FulfillOrderSchema,
   RecordSettlementPaymentInput,
   RecordSettlementPaymentSchema,
 } from '../schema/order.schema';
@@ -8,4 +10,8 @@ export function parseRecordSettlementPaymentBody(
   body: object,
 ): RecordSettlementPaymentInput {
   return parseBody(RecordSettlementPaymentSchema, body);
+}
+
+export function parseFulfillOrderBody(body: object): FulfillOrderInput {
+  return parseBody(FulfillOrderSchema, body);
 }

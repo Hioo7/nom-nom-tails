@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { FiCalendar, FiClock, FiMapPin, FiPackage, FiPhone } from 'react-icons/fi';
+import { FiCalendar, FiClock, FiEdit3, FiMapPin, FiPackage, FiPhone } from 'react-icons/fi';
 import type { DeliveryPartnerTaskSummary } from '../../../types';
 import { formatDate, formatTimeSlotLabel } from '../AdminDashboard/orderFormatters';
 import { hasTaskPhoneNumber } from './deliveryTaskCall';
@@ -20,6 +20,7 @@ interface DeliveryTaskCardProps {
   onAction: (task: DeliveryPartnerTaskSummary) => void;
   onLocationAction?: (task: DeliveryPartnerTaskSummary) => void;
   onCallAction?: (task: DeliveryPartnerTaskSummary) => void;
+  onNotesAction?: (task: DeliveryPartnerTaskSummary) => void;
   actionIcon?: ReactNode;
   actionAriaLabel?: string;
   hideActionLabel?: boolean;
@@ -34,6 +35,7 @@ export default function DeliveryTaskCard({
   onAction,
   onLocationAction,
   onCallAction,
+  onNotesAction,
   actionIcon,
   actionAriaLabel,
   hideActionLabel,
@@ -43,6 +45,7 @@ export default function DeliveryTaskCard({
   const hasCoordinates = hasValidTaskCoordinates(task);
   const showLocationAction = typeof onLocationAction === 'function';
   const showCallAction = typeof onCallAction === 'function';
+  const showNotesAction = typeof onNotesAction === 'function';
   const hasPhoneNumber = hasTaskPhoneNumber(task.customerPhone);
   const primaryActionAriaLabel = actionAriaLabel ?? actionLabel;
 
@@ -95,6 +98,16 @@ export default function DeliveryTaskCard({
               aria-label={`Call customer for order ${task.orderNumber}`}
             >
               <FiPhone size={18} />
+            </button>
+          ) : null}
+          {showNotesAction ? (
+            <button
+              type="button"
+              className="btn btn-circle btn-outline shrink-0"
+              onClick={() => onNotesAction(task)}
+              aria-label={`View handling notes for order ${task.orderNumber}`}
+            >
+              <FiEdit3 size={18} />
             </button>
           ) : null}
           {secondaryAction ? (

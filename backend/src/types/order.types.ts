@@ -1,4 +1,4 @@
-import { OrderStatus, PaymentMethod, SettlementStatus } from '@prisma/client';
+import { DayOfWeek, OrderStatus, PaymentMethod, SettlementStatus } from '@prisma/client';
 
 export interface SafeUpcomingOrder {
   id: string;
@@ -81,4 +81,28 @@ export interface SafeSettlementOrder {
     endTime: string;
   };
   payments: SafeSettlementPayment[];
+}
+
+export interface SafeChefOrderDish {
+  id: string;
+  dishId: string;
+  name: string;
+  description: string;
+  imageUrl: string | null;
+  quantity: number;
+}
+
+export interface SafeChefOrder {
+  id: string;
+  orderNumber: string;
+  customerName: string;
+  deliveryDate: Date;
+  status: OrderStatus;
+  timeSlot: {
+    id: string;
+    day: DayOfWeek;
+    startTime: string;
+    endTime: string;
+  };
+  dishes: SafeChefOrderDish[];
 }

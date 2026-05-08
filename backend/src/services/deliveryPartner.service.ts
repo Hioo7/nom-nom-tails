@@ -63,6 +63,7 @@ function toTaskSummary(task: DeliveryPartnerTaskRecord): DeliveryPartnerTaskSumm
     locationLabel: `${o.deliveryLine1}, ${o.deliveryCity}, ${o.deliveryState} - ${o.deliveryPin}`,
     latitude: o.deliveryLat,
     longitude: o.deliveryLng,
+    handlingNotes: task.handlingNotes,
     timeSlot: {
       id: o.timeSlot.id,
       day: o.timeSlot.day,

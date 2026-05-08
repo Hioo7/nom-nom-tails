@@ -1,4 +1,4 @@
-export type Role = 'SUPER_ADMIN' | 'ADMIN' | 'DELIVERY_PARTNER' | 'CUSTOMER';
+export type Role = 'SUPER_ADMIN' | 'ADMIN' | 'DELIVERY_PARTNER' | 'CUSTOMER' | 'CHEF';
 
 export interface SafeUser {
   id: string;
@@ -48,14 +48,14 @@ export interface CreateUserPayload {
   name: string;
   email: string;
   password: string;
-  role: 'ADMIN' | 'DELIVERY_PARTNER';
+  role: 'ADMIN' | 'DELIVERY_PARTNER' | 'CHEF';
 }
 
 export interface UpdateUserPayload {
   name?: string;
   email?: string;
   password?: string;
-  role?: 'ADMIN' | 'DELIVERY_PARTNER';
+  role?: 'ADMIN' | 'DELIVERY_PARTNER' | 'CHEF';
 }
 
 export interface CustomerSummary {
@@ -239,6 +239,7 @@ export interface DeliveryPartnerTaskSummary {
   locationLabel: string;
   latitude: number;
   longitude: number;
+  handlingNotes: string | null;
   timeSlot: DeliveryPartnerTaskTimeSlot;
 }
 
@@ -390,4 +391,40 @@ export interface CampaignContributionCustomerTotal {
 export interface CampaignContributionBreakdown {
   campaign: Campaign;
   customerBreakdown: CampaignContributionCustomerTotal[];
+}
+
+// ── Chef ─────────────────────────────────────────────────────────────────────
+
+export type ChefOrderStatus =
+  | 'PENDING'
+  | 'CONFIRMED'
+  | 'READY_FOR_DELIVERY'
+  | 'IN_DELIVERY'
+  | 'DELIVERED'
+  | 'CANCELLED';
+
+export interface ChefOrderTimeSlot {
+  id: string;
+  day: DayOfWeek;
+  startTime: string;
+  endTime: string;
+}
+
+export interface ChefOrderDish {
+  id: string;
+  dishId: string;
+  name: string;
+  description: string;
+  imageUrl: string | null;
+  quantity: number;
+}
+
+export interface ChefOrder {
+  id: string;
+  orderNumber: string;
+  customerName: string;
+  deliveryDate: string;
+  status: ChefOrderStatus;
+  timeSlot: ChefOrderTimeSlot;
+  dishes: ChefOrderDish[];
 }

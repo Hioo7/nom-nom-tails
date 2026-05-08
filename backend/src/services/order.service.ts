@@ -340,7 +340,7 @@ class OrderService {
     };
   }
 
-  async fulfillOrder(orderId: string): Promise<void> {
+  async fulfillOrder(orderId: string, handlingNotes?: string): Promise<void> {
     await prisma.$transaction(async (tx) => {
       const order = await tx.order.findUnique({
         where: { id: orderId },
@@ -425,10 +425,12 @@ class OrderService {
           capturedAt: null,
           completedAt: null,
           failureReason: null,
+          handlingNotes: handlingNotes ?? null,
         },
         create: {
           orderId,
           status: DeliveryStatus.AVAILABLE,
+          handlingNotes: handlingNotes ?? null,
         },
       });
     });

@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import OrderService from '../services/order.service';
-import { parseRecordSettlementPaymentBody } from '../validators/order.validator';
+import { parseFulfillOrderBody, parseRecordSettlementPaymentBody } from '../validators/order.validator';
 
 const orderService = OrderService.getInstance();
 
@@ -49,7 +49,8 @@ export async function fulfillOrder(
   next: NextFunction,
 ): Promise<void> {
   try {
-    await orderService.fulfillOrder(req.params['id'] as string);
+    const { handlingNotes } = parseFulfillOrderBody(req.body as object);
+    await orderService.fulfillOrder(req.params['id'] as string, handlingNotes);
     res.status(204).send();
   } catch (error) {
     next(error);

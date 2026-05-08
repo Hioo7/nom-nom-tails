@@ -9,6 +9,7 @@ const REAL_DASHBOARDS: Partial<Record<string, string>> = {
   SUPER_ADMIN: '/super-admin',
   ADMIN: '/admin',
   DELIVERY_PARTNER: '/delivery',
+  CHEF: '/chef',
 };
 
 export default function LoginForm() {

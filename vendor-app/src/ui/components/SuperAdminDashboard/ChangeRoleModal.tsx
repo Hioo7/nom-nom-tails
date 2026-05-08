@@ -3,21 +3,24 @@ import { FiShield } from 'react-icons/fi';
 import type { ApiError, SafeUser } from '../../../types';
 import MobileModalShell from '../shared/MobileModalShell';
 
-type StaffRole = 'ADMIN' | 'DELIVERY_PARTNER';
+type StaffRole = 'ADMIN' | 'DELIVERY_PARTNER' | 'CHEF';
 
 const ROLE_LABELS: Record<StaffRole, string> = {
   ADMIN: 'Admin',
   DELIVERY_PARTNER: 'Delivery Partner',
+  CHEF: 'Chef',
 };
 
 const ROLE_BADGE: Record<StaffRole, string> = {
   ADMIN: 'badge-secondary',
   DELIVERY_PARTNER: 'badge-accent',
+  CHEF: 'badge-warning',
 };
 
 const ROLE_CARD_STYLES: Record<StaffRole, string> = {
   ADMIN: 'border-secondary/30 bg-secondary/5',
   DELIVERY_PARTNER: 'border-accent/30 bg-accent/5',
+  CHEF: 'border-warning/30 bg-warning/5',
 };
 
 interface ChangeRoleModalProps {
@@ -94,7 +97,7 @@ export default function ChangeRoleModal({ user, onConfirm, onClose }: ChangeRole
       </div>
 
       <div className="grid gap-3">
-        {(['ADMIN', 'DELIVERY_PARTNER'] as const).map((role) => {
+        {(['ADMIN', 'DELIVERY_PARTNER', 'CHEF'] as const).map((role) => {
           const isSelected = selectedRole === role;
 
           return (
@@ -115,7 +118,9 @@ export default function ChangeRoleModal({ user, onConfirm, onClose }: ChangeRole
                   <p className="mt-1 text-sm text-base-content/60">
                     {role === 'ADMIN'
                       ? 'Can manage internal operations and staff workflows.'
-                      : 'Handles order pickup, routing, and delivery updates.'}
+                      : role === 'DELIVERY_PARTNER'
+                        ? 'Handles order pickup, routing, and delivery updates.'
+                        : 'Prepares and manages kitchen orders for daily delivery slots.'}
                   </p>
                 </div>
                 <span className={`badge badge-sm ${ROLE_BADGE[role]}`}>

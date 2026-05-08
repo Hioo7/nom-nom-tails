@@ -6,11 +6,13 @@ export interface StaffResult {
   admin: { id: string };
   deliveryPartner1: { id: string };
   deliveryPartner2: { id: string };
+  chef: { id: string };
 }
 
 export async function seedAdminAndDelivery(): Promise<StaffResult> {
   const adminPassword = await hash('Admin@123456');
   const deliveryPassword = await hash('Delivery@123');
+  const chefPassword = await hash('Chef@123456');
 
   const admin = await prisma.user.create({
     data: {
@@ -40,6 +42,15 @@ export async function seedAdminAndDelivery(): Promise<StaffResult> {
     },
   });
 
-  console.log('  Created 1 admin and 2 delivery partners.');
-  return { admin, deliveryPartner1, deliveryPartner2 };
+  const chef = await prisma.user.create({
+    data: {
+      email: 'chef@dogdash.com',
+      password: chefPassword,
+      name: 'Lakshmi Nair',
+      role: Role.CHEF,
+    },
+  });
+
+  console.log('  Created 1 admin, 2 delivery partners, and 1 chef.');
+  return { admin, deliveryPartner1, deliveryPartner2, chef };
 }

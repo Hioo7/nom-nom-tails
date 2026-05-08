@@ -13,7 +13,7 @@ interface UpcomingOrdersSectionProps {
   onRetry: () => void;
   onViewDetails: (orderId: string) => void;
   onOpenProcurement: () => void;
-  onFulfill: (orderId: string) => void;
+  onFulfill: (orderId: string, handlingNotes?: string) => void;
   onApprove: (orderId: string) => void;
   onReject: (orderId: string) => void;
 }
@@ -45,7 +45,7 @@ function OrderGroup({
   approvingOrderId: string | null;
   rejectingOrderId: string | null;
   onViewDetails: (orderId: string) => void;
-  onFulfill: (orderId: string) => void;
+  onFulfill: (orderId: string, handlingNotes?: string) => void;
   onApprove: (orderId: string) => void;
   onReject: (orderId: string) => void;
 }) {

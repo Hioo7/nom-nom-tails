@@ -5,6 +5,7 @@ import LandingPage from './ui/pages/LandingPage';
 import LoginPage from './ui/pages/LoginPage';
 import NotFoundPage from './ui/pages/NotFoundPage';
 import AdminDashboardPage from './ui/pages/AdminDashboardPage';
+import ChefDashboardPage from './ui/pages/ChefDashboardPage';
 import DeliveryDashboardPage from './ui/pages/DeliveryDashboardPage';
 import DeliveryProofPage from './ui/pages/DeliveryProofPage';
 import SuperAdminDashboardPage from './ui/pages/SuperAdminDashboardPage';
@@ -45,6 +46,14 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={['DELIVERY_PARTNER']}>
                 <DeliveryDashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/chef"
+            element={
+              <ProtectedRoute allowedRoles={['CHEF']}>
+                <ChefDashboardPage />
               </ProtectedRoute>
             }
           />

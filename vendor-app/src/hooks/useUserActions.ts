@@ -6,8 +6,8 @@ const userService = new UserService();
 interface UseUserActionsReturn {
   updateUserEmail: (id: string, email: string) => Promise<void>;
   updateUserPassword: (id: string, password: string) => Promise<void>;
-  updateUserRole: (id: string, role: 'ADMIN' | 'DELIVERY_PARTNER') => Promise<void>;
-  createUser: (name: string, email: string, password: string, role: 'ADMIN' | 'DELIVERY_PARTNER') => Promise<void>;
+  updateUserRole: (id: string, role: 'ADMIN' | 'DELIVERY_PARTNER' | 'CHEF') => Promise<void>;
+  createUser: (name: string, email: string, password: string, role: 'ADMIN' | 'DELIVERY_PARTNER' | 'CHEF') => Promise<void>;
   deleteUser: (id: string) => Promise<void>;
 }
 
@@ -29,7 +29,7 @@ export function useUserActions(refetch: () => void): UseUserActionsReturn {
     refetch();
   };
 
-  const updateUserRole = async (id: string, role: 'ADMIN' | 'DELIVERY_PARTNER'): Promise<void> => {
+  const updateUserRole = async (id: string, role: 'ADMIN' | 'DELIVERY_PARTNER' | 'CHEF'): Promise<void> => {
     await userService.updateUser(ensureToken(), id, { role });
     refetch();
   };
@@ -38,7 +38,7 @@ export function useUserActions(refetch: () => void): UseUserActionsReturn {
     name: string,
     email: string,
     password: string,
-    role: 'ADMIN' | 'DELIVERY_PARTNER',
+    role: 'ADMIN' | 'DELIVERY_PARTNER' | 'CHEF',
   ): Promise<void> => {
     await userService.createUser(ensureToken(), { name, email, password, role });
     refetch();

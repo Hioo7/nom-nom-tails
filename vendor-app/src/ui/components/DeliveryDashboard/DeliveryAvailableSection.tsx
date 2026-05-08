@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { FiTruck } from 'react-icons/fi';
 import type { DeliveryPartnerTaskSummary } from '../../../types';
 import DeliveryTaskCard from './DeliveryTaskCard';
+import DeliveryTaskHandlingNotesSheet from './DeliveryTaskHandlingNotesSheet';
 import DeliveryTaskLocationSheet from './DeliveryTaskLocationSheet';
 
 interface DeliveryAvailableSectionProps {
@@ -24,6 +25,9 @@ export default function DeliveryAvailableSection({
   onAccept,
 }: DeliveryAvailableSectionProps) {
   const [selectedLocationTask, setSelectedLocationTask] = useState<DeliveryPartnerTaskSummary | null>(
+    null,
+  );
+  const [selectedNotesTask, setSelectedNotesTask] = useState<DeliveryPartnerTaskSummary | null>(
     null,
   );
 
@@ -70,6 +74,7 @@ export default function DeliveryAvailableSection({
                 isSubmitting={activeTaskId === task.taskId}
                 onAction={onAccept}
                 onLocationAction={setSelectedLocationTask}
+                onNotesAction={task.handlingNotes ? setSelectedNotesTask : undefined}
               />
             ))}
           </div>
@@ -80,6 +85,12 @@ export default function DeliveryAvailableSection({
         task={selectedLocationTask}
         onClose={() => setSelectedLocationTask(null)}
       />
+      {selectedNotesTask ? (
+        <DeliveryTaskHandlingNotesSheet
+          task={selectedNotesTask}
+          onClose={() => setSelectedNotesTask(null)}
+        />
+      ) : null}
     </>
   );
 }

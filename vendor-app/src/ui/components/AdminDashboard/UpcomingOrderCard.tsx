@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { FiCheck, FiInfo, FiX } from 'react-icons/fi';
 import type { AdminUpcomingOrder } from '../../../types';
+import FulfillOrderSheet from '../shared/FulfillOrderSheet';
 import { formatDate, formatTimeSlotLabel } from './orderFormatters';
 
 interface UpcomingOrderCardProps {
@@ -8,7 +10,7 @@ interface UpcomingOrderCardProps {
   isApproving: boolean;
   isRejecting: boolean;
   onViewDetails: (orderId: string) => void;
-  onFulfill: (orderId: string) => void;
+  onFulfill: (orderId: string, handlingNotes?: string) => void;
   onApprove: (orderId: string) => void;
   onReject: (orderId: string) => void;
 }
@@ -23,6 +25,7 @@ export default function UpcomingOrderCard({
   onApprove,
   onReject,
 }: UpcomingOrderCardProps) {
+  const [showFulfillSheet, setShowFulfillSheet] = useState(false);
   const isAwaitingApproval = order.status === 'AWAITING_APPROVAL';
   const isAnyActionPending = isSubmitting || isApproving || isRejecting;
 
@@ -111,7 +114,7 @@ export default function UpcomingOrderCard({
               className="btn btn-neutral flex-1"
               disabled={isAnyActionPending}
               aria-label={`Mark order ${order.orderNumber} as completed`}
-              onClick={() => onFulfill(order.id)}
+              onClick={() => { setShowFulfillSheet(true); }}
             >
               {isSubmitting ? (
                 <span className="loading loading-spinner loading-sm" />
@@ -125,6 +128,19 @@ export default function UpcomingOrderCard({
           )}
         </div>
       </div>
+
+      {showFulfillSheet ? (
+        <FulfillOrderSheet
+          orderNumber={order.orderNumber}
+          isSubmitting={isSubmitting}
+          error=""
+          onClose={() => { if (!isSubmitting) setShowFulfillSheet(false); }}
+          onConfirm={(notes) => {
+            setShowFulfillSheet(false);
+            onFulfill(order.id, notes ?? undefined);
+          }}
+        />
+      ) : null}
     </div>
   );
 }

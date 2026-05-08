@@ -96,10 +96,11 @@ export class OrderService implements IOrderService {
     return handleResponse<void>(res);
   }
 
-  async fulfillOrder(token: string, id: string): Promise<void> {
+  async fulfillOrder(token: string, id: string, handlingNotes?: string): Promise<void> {
     const res = await fetch(`${this.baseUrl}/api/orders/${id}/fulfill`, {
       method: 'POST',
       headers: authHeaders(token),
+      body: JSON.stringify(handlingNotes ? { handlingNotes } : {}),
     });
     return handleResponse<void>(res);
   }

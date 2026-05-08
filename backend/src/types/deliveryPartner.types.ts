@@ -34,4 +34,5 @@ export interface DeliveryPartnerTaskSummary {
   latitude: number | null;
   longitude: number | null;
   timeSlot: DeliveryPartnerTaskTimeSlot;
+  handlingNotes: string | null;
 }

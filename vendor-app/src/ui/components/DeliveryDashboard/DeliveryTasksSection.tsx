@@ -3,6 +3,7 @@ import { FiCheck, FiCheckCircle, FiX } from 'react-icons/fi';
 import type { DeliveryPartnerTaskSummary } from '../../../types';
 import DeliveryTaskCard from './DeliveryTaskCard';
 import DeliveryTaskFailureSheet from './DeliveryTaskFailureSheet';
+import DeliveryTaskHandlingNotesSheet from './DeliveryTaskHandlingNotesSheet';
 import DeliveryTaskLocationSheet from './DeliveryTaskLocationSheet';
 
 interface DeliveryTasksSectionProps {
@@ -32,6 +33,9 @@ export default function DeliveryTasksSection({
     null,
   );
   const [selectedFailureTask, setSelectedFailureTask] = useState<DeliveryPartnerTaskSummary | null>(
+    null,
+  );
+  const [selectedNotesTask, setSelectedNotesTask] = useState<DeliveryPartnerTaskSummary | null>(
     null,
   );
 
@@ -83,6 +87,7 @@ export default function DeliveryTasksSection({
                 onAction={onDeliver}
                 onLocationAction={setSelectedLocationTask}
                 onCallAction={onCall}
+                onNotesAction={task.handlingNotes ? setSelectedNotesTask : undefined}
                 secondaryAction={{
                   ariaLabel: `Mark order ${task.orderNumber} as failed`,
                   icon: <FiX size={18} />,
@@ -99,6 +104,12 @@ export default function DeliveryTasksSection({
         task={selectedLocationTask}
         onClose={() => setSelectedLocationTask(null)}
       />
+      {selectedNotesTask ? (
+        <DeliveryTaskHandlingNotesSheet
+          task={selectedNotesTask}
+          onClose={() => setSelectedNotesTask(null)}
+        />
+      ) : null}
       {selectedFailureTask ? (
         <DeliveryTaskFailureSheet
           key={selectedFailureTask.taskId}

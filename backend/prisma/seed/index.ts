@@ -50,6 +50,7 @@ async function populate(): Promise<void> {
   console.log('  Admin:            admin@dogdash.com     / Admin@123456');
   console.log('  Delivery Partner: delivery1@dogdash.com / Delivery@123');
   console.log('  Delivery Partner: delivery2@dogdash.com / Delivery@123');
+  console.log('  Chef:             chef@dogdash.com      / Chef@123456');
 }
 
 async function clear(): Promise<void> {

@@ -222,6 +222,12 @@ export async function seedStandaloneOrders(input: SeedStandaloneOrdersInput): Pr
   const rahulSameDayItems = dishItems([dishes.chickenBowl], [1]);
   const divyaSameDayItems = dishItems([dishes.masalaDosa, dishes.idly], [1, 2]);
 
+  // CONFIRMED today orders — visible in chef dashboard
+  const arjunChefItems = dishItems([dishes.masalaDosa, dishes.idly], [2, 1]);
+  const karanChefItems = dishItems([dishes.chickenBowl, dishes.sandwich], [1, 1]);
+  const snehaChefItems = dishItems([dishes.dosa, dishes.idly], [2, 2]);
+  const anjaliChefItems = dishItems([dishes.chickenBowl, dishes.masalaDosa], [1, 1]);
+
   const orderConfigs: StandaloneOrderConfig[] = [
     // ── Rahul: 2x Chicken Bowl + 1x Sandwich, Wed morning 2026-04-23, PENDING ──
     {
@@ -385,6 +391,68 @@ export async function seedStandaloneOrders(input: SeedStandaloneOrdersInput): Pr
       status: OrderStatus.AWAITING_APPROVAL,
       items: divyaSameDayItems,
     },
+
+    // ── CONFIRMED TODAY ORDERS — visible in chef dashboard ───────────────────
+
+    // Arjun: 2x Masala Dosa + 1x Idly
+    {
+      customerId: customers.arjun.id,
+      timeSlotId: todaySlot.id,
+      deliveryDate: todayDate,
+      address: snapshotFor(customers.arjun.id),
+      status: OrderStatus.CONFIRMED,
+      items: arjunChefItems,
+      settlement: {
+        totalAmount: totalPrice(arjunChefItems),
+        paidAmount: 0,
+        settlementStatus: SettlementStatus.UNSETTLED,
+      },
+    },
+
+    // Karan: 1x Chicken Bowl + 1x Sandwich
+    {
+      customerId: customers.karan.id,
+      timeSlotId: todaySlot.id,
+      deliveryDate: todayDate,
+      address: snapshotFor(customers.karan.id),
+      status: OrderStatus.CONFIRMED,
+      items: karanChefItems,
+      settlement: {
+        totalAmount: totalPrice(karanChefItems),
+        paidAmount: 0,
+        settlementStatus: SettlementStatus.UNSETTLED,
+      },
+    },
+
+    // Sneha: 2x Dosa + 2x Idly
+    {
+      customerId: customers.sneha.id,
+      timeSlotId: todaySlot.id,
+      deliveryDate: todayDate,
+      address: snapshotFor(customers.sneha.id),
+      status: OrderStatus.CONFIRMED,
+      items: snehaChefItems,
+      settlement: {
+        totalAmount: totalPrice(snehaChefItems),
+        paidAmount: 0,
+        settlementStatus: SettlementStatus.UNSETTLED,
+      },
+    },
+
+    // Anjali: 1x Chicken Bowl + 1x Masala Dosa
+    {
+      customerId: customers.anjali.id,
+      timeSlotId: todaySlot.id,
+      deliveryDate: todayDate,
+      address: snapshotFor(customers.anjali.id),
+      status: OrderStatus.CONFIRMED,
+      items: anjaliChefItems,
+      settlement: {
+        totalAmount: totalPrice(anjaliChefItems),
+        paidAmount: 0,
+        settlementStatus: SettlementStatus.UNSETTLED,
+      },
+    },
   ];
 
   for (const config of orderConfigs) {
@@ -394,4 +462,5 @@ export async function seedStandaloneOrders(input: SeedStandaloneOrdersInput): Pr
   console.log(`  Created ${orderConfigs.length} standalone orders.`);
   console.log('  3 AVAILABLE delivery tasks seeded for today — visible in delivery partner portal.');
   console.log('  2 AWAITING_APPROVAL same-day orders seeded — visible in admin upcoming orders with Accept/Reject.');
+  console.log('  4 CONFIRMED today orders seeded (arjun, karan, sneha, anjali) — visible in chef dashboard.');
 }

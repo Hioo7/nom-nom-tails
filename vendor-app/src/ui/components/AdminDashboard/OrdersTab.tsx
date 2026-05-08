@@ -48,12 +48,12 @@ export default function OrdersTab() {
   });
   const { increaseStock, decreaseStock } = useIngredientActions();
 
-  async function handleFulfill(orderId: string): Promise<void> {
+  async function handleFulfill(orderId: string, handlingNotes?: string): Promise<void> {
     setUpcomingActionError('');
     setFulfillingOrderId(orderId);
 
     try {
-      await fulfillOrder(orderId);
+      await fulfillOrder(orderId, handlingNotes);
     } catch (error) {
       setUpcomingActionError(
         getErrorMessage(error, 'Failed to mark the order as fulfilled.'),
@@ -152,8 +152,8 @@ export default function OrdersTab() {
           onRetry={upcomingOrders.refetch}
           onViewDetails={setDetailOrderId}
           onOpenProcurement={() => setIsProcurementOpen(true)}
-          onFulfill={(orderId) => {
-            void handleFulfill(orderId);
+          onFulfill={(orderId, handlingNotes) => {
+            void handleFulfill(orderId, handlingNotes);
           }}
           onApprove={(orderId) => {
             void handleApprove(orderId);

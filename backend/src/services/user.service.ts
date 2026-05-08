@@ -5,7 +5,7 @@ import { hash } from '../lib/password';
 import AppError from '../lib/AppError';
 import prisma from '../lib/prisma';
 
-const STAFF_ROLES = [Role.ADMIN, Role.DELIVERY_PARTNER];
+const STAFF_ROLES = [Role.ADMIN, Role.DELIVERY_PARTNER, Role.CHEF];
 
 class UserService {
   private static instance: UserService;

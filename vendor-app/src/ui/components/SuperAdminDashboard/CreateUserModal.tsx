@@ -4,7 +4,7 @@ import type { ApiError, ApiErrorField, FieldErrors } from '../../../types';
 import MobileModalShell from '../shared/MobileModalShell';
 import PasswordStrengthIndicator from '../shared/PasswordStrengthIndicator';
 
-type StaffRole = 'ADMIN' | 'DELIVERY_PARTNER';
+type StaffRole = 'ADMIN' | 'DELIVERY_PARTNER' | 'CHEF';
 
 interface CreateUserModalProps {
   onConfirm: (name: string, email: string, password: string, role: StaffRole) => Promise<void>;
@@ -191,6 +191,29 @@ export default function CreateUserModal({ onConfirm, onClose }: CreateUserModalP
               </div>
               <span className="badge badge-sm badge-accent">
                 {role === 'DELIVERY_PARTNER' ? 'Selected' : 'Choose'}
+              </span>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            className={`rounded-2xl border px-4 py-4 text-left transition ${
+              role === 'CHEF'
+                ? 'border-primary bg-primary/8 ring-1 ring-primary/20'
+                : 'border-warning/30 bg-warning/5'
+            }`}
+            onClick={() => setRole('CHEF')}
+            disabled={isSubmitting}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="font-semibold text-base-content">Chef</p>
+                <p className="mt-1 text-sm text-base-content/60">
+                  Prepares and manages kitchen orders for daily delivery slots.
+                </p>
+              </div>
+              <span className="badge badge-sm badge-warning">
+                {role === 'CHEF' ? 'Selected' : 'Choose'}
               </span>
             </div>
           </button>

@@ -18,6 +18,7 @@ import customerTimeSlotRouter from './customerTimeSlot.routes';
 import subscriptionRouter from './subscription.routes';
 import campaignRouter from './campaign.routes';
 import customerCampaignRouter from './customerCampaign.routes';
+import chefRouter from './chef.routes';
 
 const router = Router();
 
@@ -43,5 +44,6 @@ router.use('/customer/time-slots', customerTimeSlotRouter);
 router.use('/subscriptions', subscriptionRouter);
 router.use('/campaigns', campaignRouter);
 router.use('/customer/campaigns', customerCampaignRouter);
+router.use('/chef/orders', chefRouter);
 
 export default router;
