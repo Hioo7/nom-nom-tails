@@ -35,6 +35,17 @@ export default function DeliveryOrdersPills({
           >
             My Tasks
           </button>
+          <button
+            type="button"
+            className={`btn btn-sm rounded-full px-4 ${
+              activeSection === 'all'
+                ? 'btn-neutral shadow-sm'
+                : 'btn-ghost border border-base-200'
+            }`}
+            onClick={() => onSectionChange('all')}
+          >
+            All Orders
+          </button>
         </div>
       </div>
     </div>

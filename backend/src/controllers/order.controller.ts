@@ -4,6 +4,25 @@ import { parseFulfillOrderBody, parseRecordSettlementPaymentBody } from '../vali
 
 const orderService = OrderService.getInstance();
 
+export async function listOrdersByMonth(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const { month } = req.query;
+    if (!month || typeof month !== 'string' || !/^\d{4}-\d{2}$/.test(month)) {
+      res.status(400).json({ error: { message: 'month query param must be YYYY-MM' } });
+      return;
+    }
+    const [year, mon] = month.split('-').map(Number) as [number, number];
+    const orders = await orderService.listByMonth(year, mon);
+    res.status(200).json({ data: orders });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function listUpcomingOrders(
   _req: Request,
   res: Response,

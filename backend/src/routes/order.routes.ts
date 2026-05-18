@@ -5,6 +5,7 @@ import {
   fulfillOrder,
   getOrderDetails,
   getUpcomingProcurementSummary,
+  listOrdersByMonth,
   listPendingSettlements,
   listUpcomingOrders,
   recordSettlementPayment,
@@ -17,6 +18,7 @@ const router = Router();
 const adminGuard = [authenticate, requireRole(Role.ADMIN, Role.SUPER_ADMIN)];
 
 router.get('/upcoming', ...adminGuard, listUpcomingOrders);
+router.get('/by-month', ...adminGuard, listOrdersByMonth);
 router.get('/upcoming/procurement', ...adminGuard, getUpcomingProcurementSummary);
 router.get('/settlements', ...adminGuard, listPendingSettlements);
 router.get('/:id', ...adminGuard, getOrderDetails);

@@ -32,9 +32,10 @@ class MeService {
   }
 
   async updateMe(userId: string, data: UpdateMeInput): Promise<SafeUser> {
-    const updateData: { name?: string; email?: string; password?: string } = {};
+    const updateData: { name?: string; email?: string; phone?: string | null; password?: string } = {};
 
-    if (data.name !== undefined) updateData.name = data.name;
+    if (data.name  !== undefined) updateData.name  = data.name;
+    if (data.phone !== undefined) updateData.phone = data.phone ? data.phone.replace(/[\s\-()]/g, '') : null;
 
     if (data.email !== undefined) {
       const conflict = await prisma.user.findFirst({

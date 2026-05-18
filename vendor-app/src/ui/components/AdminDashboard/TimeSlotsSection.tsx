@@ -6,7 +6,7 @@ import type { DayOfWeek, TimeSlot, UpdateTimeSlotPayload } from '../../../types'
 import CreateEditTimeSlotModal from './CreateEditTimeSlotModal';
 import DeleteTimeSlotModal from './DeleteTimeSlotModal';
 import { formatDay } from './orderFormatters';
-import TimeSlotDayBar from './TimeSlotDayBar';
+import TimeSlotMonthCalendar from './TimeSlotMonthCalendar';
 import TimeSlotList from './TimeSlotList';
 
 const DAY_MAP: DayOfWeek[] = [
@@ -68,7 +68,7 @@ export default function TimeSlotsSection() {
         </button>
       </div>
 
-      <TimeSlotDayBar activeDay={activeDay} onDayChange={setActiveDay} />
+      <TimeSlotMonthCalendar activeDay={activeDay} onDayChange={setActiveDay} />
 
       {isLoading ? (
         <div className="flex justify-center py-16">

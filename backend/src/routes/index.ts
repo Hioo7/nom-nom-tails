@@ -19,6 +19,7 @@ import subscriptionRouter from './subscription.routes';
 import campaignRouter from './campaign.routes';
 import customerCampaignRouter from './customerCampaign.routes';
 import chefRouter from './chef.routes';
+import notificationRouter from './notification.routes';
 
 const router = Router();
 
@@ -45,5 +46,6 @@ router.use('/subscriptions', subscriptionRouter);
 router.use('/campaigns', campaignRouter);
 router.use('/customer/campaigns', customerCampaignRouter);
 router.use('/chef/orders', chefRouter);
+router.use('/notifications', notificationRouter);
 
 export default router;

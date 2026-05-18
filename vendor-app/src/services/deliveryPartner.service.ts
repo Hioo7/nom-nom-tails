@@ -10,6 +10,7 @@ import type {
 export interface IDeliveryPartnerService {
   listPartnersWithTodayDeliveries(token: string): Promise<DeliveryPartnerSummary[]>;
   listAvailableTasks(token: string): Promise<DeliveryPartnerTaskSummary[]>;
+  listAllAvailableTasks(token: string): Promise<DeliveryPartnerTaskSummary[]>;
   listMyTasks(token: string): Promise<DeliveryPartnerTaskSummary[]>;
   acceptTask(token: string, taskId: string): Promise<void>;
   failTask(token: string, taskId: string, payload: FailDeliveryTaskPayload): Promise<void>;
@@ -56,6 +57,13 @@ export class DeliveryPartnerService implements IDeliveryPartnerService {
 
   async listAvailableTasks(token: string): Promise<DeliveryPartnerTaskSummary[]> {
     const res = await fetch(`${this.baseUrl}/api/delivery-partners/me/available-tasks`, {
+      headers: authHeaders(token),
+    });
+    return handleResponse<DeliveryPartnerTaskSummary[]>(res);
+  }
+
+  async listAllAvailableTasks(token: string): Promise<DeliveryPartnerTaskSummary[]> {
+    const res = await fetch(`${this.baseUrl}/api/delivery-partners/me/all-available-tasks`, {
       headers: authHeaders(token),
     });
     return handleResponse<DeliveryPartnerTaskSummary[]>(res);

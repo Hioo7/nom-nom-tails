@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiArrowLeft, FiCheck } from 'react-icons/fi';
 import { MeService } from '../services/me.service';
 import { useAuth } from '../hooks/useAuth';
 import { ApiError } from '../services/api';
+import type { UpdateMePayload } from '../types';
 
 const meService = new MeService();
 
@@ -13,9 +14,18 @@ export function EditProfilePage() {
 
   const [name, setName] = useState(user?.name ?? '');
   const [email, setEmail] = useState(user?.email ?? '');
+  const [phone, setPhone] = useState(user?.phone ?? '');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+
+  useEffect(() => {
+    if (user) {
+      setName(user.name);
+      setEmail(user.email);
+      setPhone(user.phone ?? '');
+    }
+  }, [user]);
 
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -33,9 +43,10 @@ export function EditProfilePage() {
 
     if (!token) return;
 
-    const payload: Record<string, string> = {};
-    if (name !== user?.name) payload.name = name;
+    const payload: UpdateMePayload = {};
+    if (name  !== user?.name)  payload.name  = name;
     if (email !== user?.email) payload.email = email;
+    if (phone !== (user?.phone ?? '')) payload.phone = phone || null;
     if (newPassword) {
       payload.currentPassword = currentPassword;
       payload.newPassword = newPassword;
@@ -51,7 +62,7 @@ export function EditProfilePage() {
       await meService.updateMe(token, payload);
       await refreshUser();
       setSuccess(true);
-      setTimeout(() => navigate('/profile'), 1200);
+      setTimeout(() => navigate('/profile'), 2000);
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.fields?.length) {
@@ -71,6 +82,18 @@ export function EditProfilePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Success toast */}
+      <div
+        className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ease-out ${
+          success ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
+        }`}
+      >
+        <div className="flex items-center gap-3 bg-gray-900 text-white px-5 py-3 rounded-2xl shadow-xl">
+          <FiCheck size={16} className="text-green-400" />
+          <span className="text-sm font-medium">Profile updated!</span>
+        </div>
+      </div>
+
       {/* Header */}
       <div className="bg-white px-4 pt-6 pb-4 border-b border-gray-100 sticky top-0 z-10">
         <div className="flex items-center gap-3 max-w-lg mx-auto">
@@ -96,6 +119,13 @@ export function EditProfilePage() {
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-xl">
             {error}
+          </div>
+        )}
+
+        {success && (
+          <div className="bg-green-50 border border-green-200 text-green-700 text-sm px-4 py-3 rounded-xl flex items-center gap-2">
+            <FiCheck size={16} />
+            Profile updated successfully!
           </div>
         )}
 
@@ -129,6 +159,19 @@ export function EditProfilePage() {
               />
               {fieldErrors.email && (
                 <p className="text-red-500 text-xs mt-1">{fieldErrors.email}</p>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-orange-400 transition-colors"
+                placeholder="+91 98765 43210"
+              />
+              {fieldErrors.phone && (
+                <p className="text-red-500 text-xs mt-1">{fieldErrors.phone}</p>
               )}
             </div>
           </div>

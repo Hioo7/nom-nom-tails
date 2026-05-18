@@ -11,6 +11,7 @@ import {
   DeliveryPartnerSummary,
   DeliveryPartnerTaskSummary,
 } from '../types/deliveryPartner.types';
+import NotificationService from './notification.service';
 
 type DeliveryPartnerTaskRecord = Prisma.DeliveryTaskGetPayload<{
   include: {
@@ -36,10 +37,6 @@ function getTodayWindow(referenceDate: Date = new Date()): { start: Date; end: D
   return { start, end };
 }
 
-function isWithinToday(deliveryDate: Date, referenceDate: Date = new Date()): boolean {
-  const { start, end } = getTodayWindow(referenceDate);
-  return deliveryDate >= start && deliveryDate <= end;
-}
 
 function toOrderNumber(orderId: string): string {
   return orderId.slice(-8).toUpperCase();
@@ -149,6 +146,28 @@ class DeliveryPartnerService {
     return tasks.map(toTaskSummary);
   }
 
+  async listAllAvailableTasksForPartner(): Promise<DeliveryPartnerTaskSummary[]> {
+    const tasks = await prisma.deliveryTask.findMany({
+      where: {
+        status: DeliveryStatus.AVAILABLE,
+        deliveryPartnerId: null,
+        order: { status: OrderStatus.READY_FOR_DELIVERY },
+      },
+      include: {
+        order: {
+          include: {
+            customer: { select: { name: true, email: true } },
+            timeSlot: true,
+            items: true,
+          },
+        },
+      },
+      orderBy: [{ order: { deliveryDate: 'asc' } }, { createdAt: 'asc' }],
+    });
+
+    return tasks.map(toTaskSummary);
+  }
+
   async listActiveTasksForPartner(deliveryPartnerId: string): Promise<DeliveryPartnerTaskSummary[]> {
     const tasks = await prisma.deliveryTask.findMany({
       where: {
@@ -182,10 +201,6 @@ class DeliveryPartnerService {
 
     if (!task) {
       throw new AppError(404, 'Order not found');
-    }
-
-    if (!isWithinToday(task.order.deliveryDate)) {
-      throw new AppError(400, 'This order is not for today');
     }
 
     if (task.order.status !== OrderStatus.READY_FOR_DELIVERY) {
@@ -267,6 +282,14 @@ class DeliveryPartnerService {
         data: { status: OrderStatus.DELIVERED },
       });
     });
+
+    await NotificationService.getInstance().create(
+      task.order.customerId,
+      'ORDER_DELIVERED',
+      'Your order has been delivered!',
+      `Order #${toOrderNumber(task.orderId)} was delivered successfully.`,
+      task.orderId,
+    );
   }
 
   async failTask(taskId: string, deliveryPartnerId: string, failureReason: string): Promise<void> {
@@ -305,6 +328,14 @@ class DeliveryPartnerService {
         data: { status: OrderStatus.CONFIRMED },
       });
     });
+
+    await NotificationService.getInstance().create(
+      task.order.customerId,
+      'ORDER_FAILED',
+      'Delivery attempt failed',
+      `We couldn't deliver order #${toOrderNumber(task.orderId)}. We'll try again soon.`,
+      task.orderId,
+    );
   }
 }
 

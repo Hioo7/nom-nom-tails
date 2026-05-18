@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   FiArrowLeft, FiMapPin, FiClock, FiCheck,
   FiPlus, FiHome, FiBriefcase, FiChevronDown, FiChevronUp, FiNavigation, FiLoader, FiHeart,
+  FiChevronLeft, FiChevronRight,
 } from 'react-icons/fi';
 import { useCart } from '../hooks/useCart';
 import { useAuth } from '../hooks/useAuth';
@@ -19,31 +20,31 @@ import { useAddresses } from '../hooks/useAddresses';
 import { reverseGeocode } from '../hooks/useGpsLocation';
 import { paiseToRupees } from '../utils/currency';
 
-const DAY_LABEL: Record<string, string> = {
-  MONDAY: 'Mon', TUESDAY: 'Tue', WEDNESDAY: 'Wed',
-  THURSDAY: 'Thu', FRIDAY: 'Fri', SATURDAY: 'Sat', SUNDAY: 'Sun',
-};
+// const DAY_LABEL: Record<string, string> = {
+//   MONDAY: 'Mon', TUESDAY: 'Tue', WEDNESDAY: 'Wed',
+//   THURSDAY: 'Thu', FRIDAY: 'Fri', SATURDAY: 'Sat', SUNDAY: 'Sun',
+// };
 
-const DAY_INDEX: Record<string, number> = {
-  SUNDAY: 0, MONDAY: 1, TUESDAY: 2, WEDNESDAY: 3,
-  THURSDAY: 4, FRIDAY: 5, SATURDAY: 6,
-};
+// const DAY_INDEX: Record<string, number> = {
+//   SUNDAY: 0, MONDAY: 1, TUESDAY: 2, WEDNESDAY: 3,
+//   THURSDAY: 4, FRIDAY: 5, SATURDAY: 6,
+// };
 
 const MIN_DAYS_AHEAD = 2;
 
 // Returns days until next occurrence of a given day-of-week (never 0 = today)
-function daysUntilNext(day: string): number {
-  const target = DAY_INDEX[day];
-  const todayIdx = new Date().getDay();
-  return ((target - todayIdx + 7) % 7) || 7;
-}
+// function daysUntilNext(day: string): number {
+//   const target = DAY_INDEX[day];
+//   const todayIdx = new Date().getDay();
+//   return ((target - todayIdx + 7) % 7) || 7;
+// }
 
-// Returns the next calendar date (YYYY-MM-DD) for a given day-of-week
-function nextDateForDay(day: string): string {
-  const result = new Date();
-  result.setDate(result.getDate() + daysUntilNext(day));
-  return result.toISOString().split('T')[0];
-}
+// // Returns the next calendar date (YYYY-MM-DD) for a given day-of-week
+// function nextDateForDay(day: string): string {
+//   const result = new Date();
+//   result.setDate(result.getDate() + daysUntilNext(day));
+//   return result.toISOString().split('T')[0];
+// }
 
 const timeSlotService = new TimeSlotService();
 const orderService = new OrderService();
@@ -108,9 +109,15 @@ export function CheckoutPage() {
 
   const [timeSlots, setTimeSlots] = useState<TimeSlot[] | null>(null);
   const slotsLoading = !!token && timeSlots === null;
-  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
+  // Multi-day delivery: dateStr (YYYY-MM-DD) → slotId
+  const [selectedDeliveries, setSelectedDeliveries] = useState<Record<string, string>>({});
   const [slotPickerOpen, setSlotPickerOpen] = useState(false);
   const [slotPickerDay, setSlotPickerDay] = useState<string | null>(null);
+  const [slotPickerDate, setSlotPickerDate] = useState<string | null>(null);
+  const [calendarDate, setCalendarDate] = useState<{ year: number; month: number }>(() => {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth() };
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [orderId, setOrderId] = useState('');
@@ -125,8 +132,48 @@ export function CheckoutPage() {
 
   const deliveryFee = 40;
   const selectedCampaign = campaigns.find((c) => c.id === selectedCampaignId) ?? null;
-  const grandTotal = paiseToRupees(totalPrice) + deliveryFee + (selectedCampaign ? paiseToRupees(selectedCampaign.costAmount) : 0);
+  const deliveryDayCount = Math.max(1, Object.keys(selectedDeliveries).length);
+  const grandTotal = (paiseToRupees(totalPrice) + deliveryFee) * deliveryDayCount + (selectedCampaign ? paiseToRupees(selectedCampaign.costAmount) : 0);
   const kindnessFromCurrentOrder = Math.round(paiseToRupees(totalPrice) * 0.05);
+
+  const getDayOfWeek = (date: Date): string => {
+    const days = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+    return days[date.getDay()];
+  };
+
+  const calendarGrid = useMemo(() => {
+    const { year, month } = calendarDate;
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const availableDays = new Set(
+      (timeSlots ?? []).filter((s) => s.isActive).map((s) => s.day),
+    );
+
+    type CalendarCell = null | { date: Date; dateStr: string; hasSlots: boolean; isPast: boolean; isToday: boolean };
+    const cells: CalendarCell[] = [];
+
+    for (let i = 0; i < firstDay.getDay(); i++) cells.push(null);
+
+    for (let d = 1; d <= lastDay.getDate(); d++) {
+      const date = new Date(year, month, d);
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const dayOfWeek = (['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'])[date.getDay()];
+      const diffDays = Math.floor((date.getTime() - today.getTime()) / 86400000);
+      const isPast = diffDays < MIN_DAYS_AHEAD;
+      const hasSlots = availableDays.has(dayOfWeek as TimeSlot['day']);
+      const isToday = diffDays === 0;
+      cells.push({ date, dateStr, hasSlots, isPast, isToday });
+    }
+
+    while (cells.length % 7 !== 0) cells.push(null);
+
+    const weeks: CalendarCell[][] = [];
+    for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
+    return weeks;
+  }, [calendarDate, timeSlots]);
 
   useEffect(() => {
     if (!token) return;
@@ -209,8 +256,8 @@ export function CheckoutPage() {
       setError('Please select or add a delivery address.');
       return;
     }
-    if (!selectedSlotId) {
-      setError('Please select a delivery time slot.');
+    if (Object.keys(selectedDeliveries).length === 0) {
+      setError('Please select at least one delivery date and time slot.');
       return;
     }
     if (!token) {
@@ -218,18 +265,19 @@ export function CheckoutPage() {
       return;
     }
 
-    const slot = (timeSlots ?? []).find((s) => s.id === selectedSlotId)!;
-    const deliveryDate = nextDateForDay(slot.day);
-
     setError('');
     setLoading(true);
     try {
-      const order = await orderService.create(token, {
-        items: items.map((i) => ({ dishId: i.dish.id, quantity: i.quantity })),
-        deliveryDate,
-        addressId: selected.id,
-        timeSlotId: selectedSlotId,
-      });
+      let firstOrderId = '';
+      for (const [deliveryDate, timeSlotId] of Object.entries(selectedDeliveries)) {
+        const order = await orderService.create(token, {
+          items: items.map((i) => ({ dishId: i.dish.id, quantity: i.quantity })),
+          deliveryDate,
+          addressId: selected.id,
+          timeSlotId,
+        });
+        if (!firstOrderId) firstOrderId = order.id;
+      }
       if (selectedCampaignId) {
         try {
           await campaignService.contribute(token, selectedCampaignId);
@@ -237,7 +285,7 @@ export function CheckoutPage() {
           // contribution failure should not block the order success
         }
       }
-      setOrderId(order.id);
+      setOrderId(firstOrderId);
       setKindnessFromOrder(kindnessFromCurrentOrder);
       clearCart();
       setStep('success');
@@ -251,7 +299,6 @@ export function CheckoutPage() {
   if (step === 'success') {
     const newLifetime = kindnessLifetime + kindnessFromOrder;
     const pct = Math.min(100, Math.round((newLifetime / 5000) * 100));
-    const dogsHelped = Math.max(1, Math.floor(newLifetime / 100));
     const firstName = token ? (items[0]?.dish?.name ? '' : '') : '';
     void firstName;
 
@@ -303,9 +350,8 @@ export function CheckoutPage() {
       const stats = [
         { label: 'Total Raised', value: `\u20B9${newLifetime.toLocaleString('en-IN')}`, color: '#fb923c' },
         { label: 'Orders Made', value: String(kindnessOrderCount + 1), color: '#fbbf24' },
-        { label: 'Dogs Helped', value: `~${dogsHelped}`, color: '#4ade80' },
       ];
-      const bw = (W - 80) / 3;
+      const bw = (W - 80) / 2;
       stats.forEach((s, i) => {
         const bx = 32 + i * (bw + 8);
         rr(bx, 176, bw, 78, 12); c.fillStyle = 'rgba(255,255,255,0.07)'; c.fill();
@@ -400,11 +446,10 @@ export function CheckoutPage() {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-2 mb-4">
+            <div className="grid grid-cols-2 gap-2 mb-4">
               {[
                 { label: 'Total Raised', value: `₹${newLifetime.toLocaleString('en-IN')}`, color: 'text-orange-400' },
                 { label: 'Orders Made', value: String(kindnessOrderCount + 1), color: 'text-amber-400' },
-                { label: 'Dogs Helped', value: `~${dogsHelped}`, color: 'text-green-400' },
               ].map((s) => (
                 <div key={s.label} className="rounded-xl p-2.5 text-center" style={{ background: 'rgba(255,255,255,0.07)' }}>
                   <p className={`text-sm font-black ${s.color}`}>{s.value}</p>
@@ -627,6 +672,107 @@ export function CheckoutPage() {
         </div>
       </div>
 
+      {/* Delivery Time Slot – Calendar */}
+      <div className="bg-white rounded-2xl pt-4 pb-4 shadow-sm mb-4">
+        <h3 className="text-sm font-semibold text-gray-800 mb-3 px-4 flex items-center gap-2">
+          <FiClock size={15} className="text-orange-500" /> Delivery Date & Time
+        </h3>
+
+        {slotsLoading ? (
+          <div className="flex items-center justify-center py-4 gap-2 text-gray-400 text-sm px-4">
+            <FiLoader size={14} className="animate-spin" /> Loading slots…
+          </div>
+        ) : (timeSlots ?? []).length === 0 ? (
+          <p className="text-xs text-gray-400 text-center py-2 px-4">No delivery slots available right now.</p>
+        ) : (
+          <>
+            {/* Calendar */}
+            <div className="px-4">
+              {/* Month navigation */}
+              <div className="flex items-center justify-between mb-3">
+                <button
+                  onClick={() => setCalendarDate((d) => {
+                    const m = d.month === 0 ? 11 : d.month - 1;
+                    const y = d.month === 0 ? d.year - 1 : d.year;
+                    return { year: y, month: m };
+                  })}
+                  className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <FiChevronLeft size={18} className="text-gray-600" />
+                </button>
+                <span className="text-sm font-bold text-gray-800">
+                  {new Date(calendarDate.year, calendarDate.month).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}
+                </span>
+                <button
+                  onClick={() => setCalendarDate((d) => {
+                    const m = d.month === 11 ? 0 : d.month + 1;
+                    const y = d.month === 11 ? d.year + 1 : d.year;
+                    return { year: y, month: m };
+                  })}
+                  className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <FiChevronRight size={18} className="text-gray-600" />
+                </button>
+              </div>
+
+              {/* Weekday headers */}
+              <div className="grid grid-cols-7 mb-1">
+                {['Su', 'M', 'T', 'W', 'Th', 'F', 'S'].map((h) => (
+                  <div key={h} className="text-center text-xs text-gray-400 font-medium py-1">{h}</div>
+                ))}
+              </div>
+
+              {/* Date grid */}
+              {calendarGrid.map((week, wi) => (
+                <div key={wi} className="grid grid-cols-7">
+                  {week.map((cell, di) => {
+                    if (!cell) return <div key={di} />;
+                    const { date, dateStr, hasSlots, isPast } = cell;
+                    const isSelected = dateStr in selectedDeliveries;
+                    const isDisabled = isPast || !hasSlots;
+                    return (
+                      <button
+                        key={di}
+                        disabled={isDisabled}
+                        onClick={() => {
+                          setSlotPickerDay(getDayOfWeek(date));
+                          setSlotPickerDate(dateStr);
+                          setSlotPickerOpen(true);
+                        }}
+                        className={`relative flex items-center justify-center mx-auto my-0.5 w-9 h-9 rounded-full text-sm font-medium transition-all
+                          ${isSelected
+                            ? 'bg-orange-500 text-white'
+                            : isDisabled
+                            ? 'text-gray-200 cursor-not-allowed'
+                            : 'text-gray-700 hover:bg-orange-50 hover:text-orange-600'}`}
+                      >
+                        {date.getDate()}
+                        {isSelected && (
+                          <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-white border-2 border-orange-500 rounded-full" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
+
+              {/* Legend */}
+              <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-100">
+                <div className="flex items-center gap-1.5 text-xs text-gray-400">
+                  <div className="w-3 h-3 rounded-full bg-orange-500" /> Selected
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-gray-400">
+                  <div className="w-3 h-3 rounded-full border border-gray-300" /> Available
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-gray-400">
+                  <div className="w-3 h-3 rounded-full bg-gray-100" /> Unavailable
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
       {/* Order Summary */}
       <div className="bg-white rounded-2xl p-4 shadow-sm mb-4">
         <h3 className="font-semibold text-gray-800 mb-3 text-sm">Order Summary</h3>
@@ -727,89 +873,6 @@ export function CheckoutPage() {
         </div>
       )}
 
-      {/* Delivery Time Slot */}
-      {(() => {
-        const uniqueDays = [...new Set((timeSlots ?? []).map((s) => s.day))]
-          .map((day) => ({
-            day,
-            slots: (timeSlots ?? []).filter((s) => s.day === day),
-          }))
-          .sort((a, b) => daysUntilNext(a.day) - daysUntilNext(b.day));
-
-        const selectedSlot = (timeSlots ?? []).find((s) => s.id === selectedSlotId);
-
-        return (
-          <div className="bg-white rounded-2xl pt-4 pb-4 shadow-sm mb-4">
-            <h3 className="text-sm font-semibold text-gray-800 mb-3 px-4 flex items-center gap-2">
-              <FiClock size={15} className="text-orange-500" /> Delivery Time Slot
-            </h3>
-
-            {slotsLoading ? (
-              <div className="flex items-center justify-center py-4 gap-2 text-gray-400 text-sm px-4">
-                <FiLoader size={14} className="animate-spin" /> Loading slots…
-              </div>
-            ) : (timeSlots ?? []).length === 0 ? (
-              <p className="text-xs text-gray-400 text-center py-2 px-4">No delivery slots available right now.</p>
-            ) : (
-              <>
-                {/* Selected slot summary */}
-                {selectedSlot && (
-                  <div className="mx-4 mb-3 px-3 py-2.5 bg-orange-50 border border-orange-200 rounded-xl flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-gray-500">
-                        {DAY_LABEL[selectedSlot.day]},{' '}
-                        {new Date(nextDateForDay(selectedSlot.day) + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
-                      </p>
-                      <p className="text-sm font-bold text-orange-600">
-                        {selectedSlot.startTime} – {selectedSlot.endTime}
-                      </p>
-                    </div>
-                    <FiCheck size={16} className="text-orange-500" />
-                  </div>
-                )}
-
-                {/* Compact date chips */}
-                <div className="flex gap-2 px-4 overflow-x-auto scrollbar-hide" style={{ scrollSnapType: 'x mandatory' }}>
-                  {uniqueDays.map(({ day, slots }) => {
-                    const allDisabled = slots.every((s) => !s.isActive || daysUntilNext(s.day) < MIN_DAYS_AHEAD);
-                    const hasSelected = slots.some((s) => s.id === selectedSlotId);
-                    const dateFormatted = new Date(nextDateForDay(day) + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
-
-                    return (
-                      <button
-                        key={day}
-                        disabled={allDisabled}
-                        onClick={() => { setSlotPickerDay(day); setSlotPickerOpen(true); }}
-                        style={{ scrollSnapAlign: 'start' }}
-                        className={`relative flex-shrink-0 flex flex-col items-center px-4 py-2 rounded-xl border-2 transition-all ${
-                          allDisabled
-                            ? 'border-gray-100 bg-gray-50 opacity-40 cursor-not-allowed'
-                            : hasSelected
-                            ? 'border-orange-400 bg-orange-50'
-                            : 'border-gray-200 bg-white hover:border-orange-300'
-                        }`}
-                      >
-                        {hasSelected && (
-                          <div className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-orange-500 rounded-full flex items-center justify-center">
-                            <FiCheck size={8} className="text-white" strokeWidth={3} />
-                          </div>
-                        )}
-                        <span className={`text-sm font-bold leading-tight ${allDisabled ? 'text-gray-400' : hasSelected ? 'text-orange-500' : 'text-gray-800'}`}>
-                          {DAY_LABEL[day]}
-                        </span>
-                        <span className={`text-xs ${allDisabled ? 'text-gray-300' : 'text-gray-500'}`}>
-                          {dateFormatted}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </>
-            )}
-          </div>
-        );
-      })()}
-
       {/* Payment note */}
       <div className="bg-orange-50 border border-orange-100 rounded-2xl p-3 mb-4 text-sm text-orange-700">
         💳 Payment will be collected at the time of delivery (Cash / UPI)
@@ -831,11 +894,15 @@ export function CheckoutPage() {
         disabled={loading}
         className="w-full bg-orange-500 hover:bg-orange-600 disabled:opacity-60 text-white font-bold py-4 rounded-2xl transition-colors text-base shadow-lg shadow-orange-200"
       >
-        {loading ? 'Placing order…' : `Place Order · ₹${grandTotal}`}
+        {loading
+          ? 'Placing order…'
+          : Object.keys(selectedDeliveries).length > 1
+          ? `Place ${Object.keys(selectedDeliveries).length} Orders · ₹${grandTotal}`
+          : `Place Order · ₹${grandTotal}`}
       </button>
 
       {/* Time slot picker bottom sheet */}
-      {slotPickerOpen && slotPickerDay && (
+      {slotPickerOpen && slotPickerDay && slotPickerDate && (
         <div
           className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center"
           onClick={() => setSlotPickerOpen(false)}
@@ -850,21 +917,23 @@ export function CheckoutPage() {
 
             <h3 className="text-base font-bold text-gray-900 mb-0.5">Select Delivery Time</h3>
             <p className="text-sm text-gray-500 mb-4">
-              {DAY_LABEL[slotPickerDay]},{' '}
-              {new Date(nextDateForDay(slotPickerDay) + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'long' })}
+              {new Date(slotPickerDate + 'T00:00:00').toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
             </p>
 
             <div className="flex flex-col gap-3 overflow-y-auto max-h-[45vh]">
               {(timeSlots ?? [])
                 .filter((s) => s.day === slotPickerDay)
                 .map((slot) => {
-                  const disabled = !slot.isActive || daysUntilNext(slot.day) < MIN_DAYS_AHEAD;
-                  const isSelected = slot.id === selectedSlotId;
+                  const disabled = !slot.isActive;
+                  const isSelected = selectedDeliveries[slotPickerDate] === slot.id;
                   return (
                     <button
                       key={slot.id}
                       disabled={disabled}
-                      onClick={() => { setSelectedSlotId(slot.id); setSlotPickerOpen(false); }}
+                      onClick={() => {
+                        setSelectedDeliveries((prev) => ({ ...prev, [slotPickerDate]: slot.id }));
+                        setSlotPickerOpen(false);
+                      }}
                       className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl border-2 transition-all ${
                         disabled
                           ? 'border-gray-100 bg-gray-50 opacity-40 cursor-not-allowed'
@@ -883,9 +952,6 @@ export function CheckoutPage() {
                           {slot.startTime} – {slot.endTime}
                         </p>
                         {!slot.isActive && <p className="text-xs text-red-400 mt-0.5">Not available</p>}
-                        {slot.isActive && daysUntilNext(slot.day) < MIN_DAYS_AHEAD && (
-                          <p className="text-xs text-gray-400 mt-0.5">Too soon to schedule</p>
-                        )}
                       </div>
                       {isSelected && <FiCheck size={16} className="text-orange-500 flex-shrink-0" />}
                     </button>

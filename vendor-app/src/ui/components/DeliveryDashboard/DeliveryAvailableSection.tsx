@@ -6,6 +6,8 @@ import DeliveryTaskHandlingNotesSheet from './DeliveryTaskHandlingNotesSheet';
 import DeliveryTaskLocationSheet from './DeliveryTaskLocationSheet';
 
 interface DeliveryAvailableSectionProps {
+  title?: string;
+  subtitle?: string;
   tasks: DeliveryPartnerTaskSummary[];
   isLoading: boolean;
   error: string;
@@ -16,6 +18,8 @@ interface DeliveryAvailableSectionProps {
 }
 
 export default function DeliveryAvailableSection({
+  title = 'Available Orders',
+  subtitle = 'Pick one order and start delivery.',
   tasks,
   isLoading,
   error,
@@ -35,8 +39,8 @@ export default function DeliveryAvailableSection({
     <>
       <div className="flex flex-col gap-4 p-4">
         <div>
-          <h2 className="text-lg font-bold text-base-content">Available Orders</h2>
-          <p className="text-sm text-base-content/60">Pick one order and start delivery.</p>
+          <h2 className="text-lg font-bold text-base-content">{title}</h2>
+          <p className="text-sm text-base-content/60">{subtitle}</p>
         </div>
 
         {actionError ? (

@@ -1,14 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { FiSearch, FiMapPin, FiChevronDown } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
+import { FiSearch, FiMapPin, FiChevronDown, FiBell } from 'react-icons/fi';
 import { DishCard } from '../components/ui/DishCard';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { LocationPicker } from '../components/ui/LocationPicker';
 import { DishService } from '../services/dish.service';
+import { NotificationService } from '../services/notification.service';
 // import { CampaignService } from '../services/campaign.service';
 import { useAuth } from '../hooks/useAuth';
 import { useGpsLocation } from '../hooks/useGpsLocation';
 // import { paiseToRupees } from '../utils/currency';
 import type { Dish } from '../types';
+
+const notificationService = new NotificationService();
 
 // TODO: re-enable InlineCampaignBanner once redesigned
 // function InlineCampaignBanner({ campaign }: { campaign: SafeCustomerCampaign }) { ... }
@@ -17,12 +21,14 @@ const dishService = new DishService();
 // const campaignService = new CampaignService();
 
 export function HomePage() {
+  const navigate = useNavigate();
   const { user, token } = useAuth();
   const [dishes, setDishes] = useState<Dish[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [query, setQuery] = useState('');
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   // const [campaigns, setCampaigns] = useState<SafeCustomerCampaign[]>([]);
 
   const { status, location, requestLocation, setManualLocation } = useGpsLocation(token);
@@ -34,6 +40,11 @@ export function HomePage() {
       .catch(() => setError('Failed to load menu. Please try again.'))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (!token) return;
+    notificationService.getUnreadCount(token).then(setUnreadCount).catch(() => {});
+  }, [token]);
 
   // useEffect(() => {
   //   if (!token) return;
@@ -76,9 +87,24 @@ export function HomePage() {
             </p>
           )}
 
-          <h1 className="text-2xl font-bold text-gray-900 mt-1">
-            {user ? `Hey ${user.name.split(' ')[0]} 👋` : 'Fresh meals for your pet 🐾'}
-          </h1>
+          <div className="flex items-center justify-between mt-1">
+            <h1 className="text-2xl font-bold text-gray-900">
+              {user ? `Hey ${user.name.split(' ')[0]} 👋` : 'Fresh meals for your pet 🐾'}
+            </h1>
+            {user && (
+              <button
+                onClick={() => navigate('/notifications')}
+                className="relative p-2 rounded-full hover:bg-gray-100 transition-colors"
+              >
+                <FiBell size={22} className="text-gray-700" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1 right-1 w-4 h-4 bg-orange-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
+            )}
+          </div>
           <p className="text-gray-400 text-sm mt-0.5">What would your furry friend like today?</p>
         </div>
 

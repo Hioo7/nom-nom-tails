@@ -11,6 +11,7 @@ import type {
 
 export interface IOrderService {
   listUpcomingOrders(token: string): Promise<AdminUpcomingOrder[]>;
+  listByMonth(token: string, month: string): Promise<AdminUpcomingOrder[]>;
   getOrderDetails(token: string, id: string): Promise<AdminOrderDetails>;
   getUpcomingProcurement(token: string): Promise<ProcurementSummary>;
   approveOrder(token: string, id: string): Promise<void>;
@@ -61,6 +62,13 @@ export class OrderService implements IOrderService {
 
   async listUpcomingOrders(token: string): Promise<AdminUpcomingOrder[]> {
     const res = await fetch(`${this.baseUrl}/api/orders/upcoming`, {
+      headers: authHeaders(token),
+    });
+    return handleResponse<AdminUpcomingOrder[]>(res);
+  }
+
+  async listByMonth(token: string, month: string): Promise<AdminUpcomingOrder[]> {
+    const res = await fetch(`${this.baseUrl}/api/orders/by-month?month=${month}`, {
       headers: authHeaders(token),
     });
     return handleResponse<AdminUpcomingOrder[]>(res);

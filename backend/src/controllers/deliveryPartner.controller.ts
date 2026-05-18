@@ -34,6 +34,19 @@ export async function listAvailableDeliveryTasks(
   }
 }
 
+export async function listAllAvailableDeliveryTasks(
+  _req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const tasks = await deliveryPartnerService.listAllAvailableTasksForPartner();
+    res.status(200).json({ data: tasks });
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function listMyDeliveryTasks(
   req: Request,
   res: Response,

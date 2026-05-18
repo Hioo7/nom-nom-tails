@@ -17,6 +17,8 @@ import { NotificationsPage } from './pages/NotificationsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { SubscriptionCheckoutPage } from './pages/SubscriptionCheckoutPage';
 import { KindnessMeterPage } from './pages/KindnessMeterPage';
+import { DishDetailPage } from './pages/DishDetailPage';
+import { NotificationInboxPage } from './pages/NotificationInboxPage';
 
 export default function App() {
   return (
@@ -36,6 +38,8 @@ export default function App() {
               <Route path="/profile/notifications" element={<NotificationsPage />} />
               <Route path="/profile/settings" element={<SettingsPage />} />
               <Route path="/subscription-checkout" element={<SubscriptionCheckoutPage />} />
+              <Route path="/dish/:id" element={<DishDetailPage />} />
+              <Route path="/notifications" element={<NotificationInboxPage />} />
 
               {/* Main app with bottom nav */}
               <Route element={<AppLayout />}>

@@ -78,7 +78,23 @@ export default function DeliveryOrdersTab({
 
       {activeSection === 'available' ? (
         <DeliveryAvailableSection
+          title="Available Orders"
+          subtitle="Pick one order and start delivery."
           tasks={tasks.availableTasks}
+          isLoading={tasks.isLoading}
+          error={tasks.error}
+          actionError={listActionError}
+          activeTaskId={activeTaskId}
+          onRetry={refetch}
+          onAccept={(task) => {
+            void handleAccept(task);
+          }}
+        />
+      ) : activeSection === 'all' ? (
+        <DeliveryAvailableSection
+          title="All Orders"
+          subtitle="All pending deliveries across all dates."
+          tasks={tasks.allAvailableTasks}
           isLoading={tasks.isLoading}
           error={tasks.error}
           actionError={listActionError}

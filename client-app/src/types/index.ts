@@ -4,6 +4,7 @@ export interface SafeUser {
   id: string;
   email: string;
   name: string;
+  phone: string | null;
   role: Role;
   isActive: boolean;
   isLoyalty: boolean;
@@ -107,6 +108,7 @@ export interface AuthResponseData {
 export interface UpdateMePayload {
   name?: string;
   email?: string;
+  phone?: string | null;
   currentPassword?: string;
   newPassword?: string;
 }
@@ -169,6 +171,18 @@ export interface SafeCustomerCampaign {
   summary: CampaignSummary;
   createdAt: string;
   updatedAt: string;
+}
+
+// ── Notification types ────────────────────────────────────────────────────────
+
+export interface AppNotification {
+  id: string;
+  type: string;
+  title: string;
+  body: string;
+  orderId: string | null;
+  isRead: boolean;
+  createdAt: string;
 }
 
 // ── Context value types ───────────────────────────────────────────────────────

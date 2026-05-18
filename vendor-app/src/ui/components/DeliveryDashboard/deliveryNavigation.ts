@@ -6,7 +6,7 @@ import type {
 } from '../../../types';
 
 export type DeliveryDashboardTab = 'orders' | 'profile';
-export type DeliveryOrdersSection = 'available' | 'tasks';
+export type DeliveryOrdersSection = 'available' | 'tasks' | 'all';
 
 interface DeliveryDashboardPathOptions {
   tab?: DeliveryDashboardTab;
@@ -19,7 +19,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 const validTabs: readonly DeliveryDashboardTab[] = ['orders', 'profile'];
-const validSections: readonly DeliveryOrdersSection[] = ['available', 'tasks'];
+const validSections: readonly DeliveryOrdersSection[] = ['available', 'tasks', 'all'];
 const validDays: readonly DayOfWeek[] = [
   'MONDAY',
   'TUESDAY',

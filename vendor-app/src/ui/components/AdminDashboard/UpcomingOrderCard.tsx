@@ -4,6 +4,13 @@ import type { AdminUpcomingOrder } from '../../../types';
 import FulfillOrderSheet from '../shared/FulfillOrderSheet';
 import { formatDate, formatTimeSlotLabel } from './orderFormatters';
 
+const STATUS_META: Record<string, { label: string; cls: string }> = {
+  READY_FOR_DELIVERY: { label: 'Ready for delivery', cls: 'badge-info' },
+  IN_DELIVERY:        { label: 'In delivery',        cls: 'badge-info' },
+  DELIVERED:          { label: 'Delivered',           cls: 'badge-success' },
+  PENDING:            { label: 'Pending',             cls: 'badge-warning' },
+};
+
 interface UpcomingOrderCardProps {
   order: AdminUpcomingOrder;
   isSubmitting: boolean;
@@ -27,6 +34,8 @@ export default function UpcomingOrderCard({
 }: UpcomingOrderCardProps) {
   const [showFulfillSheet, setShowFulfillSheet] = useState(false);
   const isAwaitingApproval = order.status === 'AWAITING_APPROVAL';
+  const isConfirmed = order.status === 'CONFIRMED';
+  const statusMeta = STATUS_META[order.status];
   const isAnyActionPending = isSubmitting || isApproving || isRejecting;
 
   return (
@@ -108,7 +117,7 @@ export default function UpcomingOrderCard({
                 )}
               </button>
             </>
-          ) : (
+          ) : isConfirmed ? (
             <button
               type="button"
               className="btn btn-neutral flex-1"
@@ -125,7 +134,9 @@ export default function UpcomingOrderCard({
                 </>
               )}
             </button>
-          )}
+          ) : statusMeta ? (
+            <span className={`badge ${statusMeta.cls} flex-1 py-3`}>{statusMeta.label}</span>
+          ) : null}
         </div>
       </div>
 

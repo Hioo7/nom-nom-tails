@@ -87,6 +87,7 @@ model User {
   email                 String                 @unique
   password              String
   name                  String
+  phone                 String?
   role                  Role                   @default(CUSTOMER)
   isActive              Boolean                @default(true)
   isLoyalty             Boolean                @default(false)
@@ -96,6 +97,7 @@ model User {
   addresses             Address[]
   cartItems             CartItem[]
   campaignContributions CampaignContribution[]
+  notifications         Notification[]
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
 }
@@ -355,4 +357,21 @@ model DeliveryPhoto {
   deliveryTaskId String
   photoUrl       String
   uploadedAt     DateTime     @default(now())
+}
+
+// ─── Notification ─────────────────────────────────────────────────────────────
+
+model Notification {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  type      String
+  title     String
+  body      String
+  orderId   String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([userId, isRead])
 }

@@ -7,6 +7,7 @@ const deliveryPartnerService = new DeliveryPartnerService();
 
 interface UseDeliveryPartnerTasksReturn {
   availableTasks: DeliveryPartnerTaskSummary[];
+  allAvailableTasks: DeliveryPartnerTaskSummary[];
   myTasks: DeliveryPartnerTaskSummary[];
   isLoading: boolean;
   error: string;
@@ -16,6 +17,7 @@ interface UseDeliveryPartnerTasksReturn {
 export function useDeliveryPartnerTasks(): UseDeliveryPartnerTasksReturn {
   const { token } = useAuth();
   const [availableTasks, setAvailableTasks] = useState<DeliveryPartnerTaskSummary[]>([]);
+  const [allAvailableTasks, setAllAvailableTasks] = useState<DeliveryPartnerTaskSummary[]>([]);
   const [myTasks, setMyTasks] = useState<DeliveryPartnerTaskSummary[]>([]);
   const [isLoading, setIsLoading] = useState(() => token !== null);
   const [error, setError] = useState('');
@@ -28,10 +30,12 @@ export function useDeliveryPartnerTasks(): UseDeliveryPartnerTasksReturn {
 
     Promise.all([
       deliveryPartnerService.listAvailableTasks(token),
+      deliveryPartnerService.listAllAvailableTasks(token),
       deliveryPartnerService.listMyTasks(token),
     ])
-      .then(([available, mine]) => {
+      .then(([available, allAvailable, mine]) => {
         setAvailableTasks(available);
+        setAllAvailableTasks(allAvailable);
         setMyTasks(mine);
         setError('');
       })
@@ -45,5 +49,5 @@ export function useDeliveryPartnerTasks(): UseDeliveryPartnerTasksReturn {
     setTrigger((current) => current + 1);
   }, []);
 
-  return { availableTasks, myTasks, isLoading, error, refetch };
+  return { availableTasks, allAvailableTasks, myTasks, isLoading, error, refetch };
 }

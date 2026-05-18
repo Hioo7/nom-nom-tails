@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   FiArrowLeft, FiClock, FiRefreshCw, FiCheck, FiLoader,
+  FiChevronLeft, FiChevronRight, FiX,
 } from 'react-icons/fi';
 import { useAuth } from '../hooks/useAuth';
 import { TimeSlotService } from '../services/timeslot.service';
@@ -9,28 +10,21 @@ import { SubscriptionService } from '../services/subscription.service';
 import type { MealPlan, TimeSlot } from '../types';
 import { paiseToRupees } from '../utils/currency';
 
-const DAY_LABEL: Record<string, string> = {
-  MONDAY: 'Mon', TUESDAY: 'Tue', WEDNESDAY: 'Wed',
-  THURSDAY: 'Thu', FRIDAY: 'Fri', SATURDAY: 'Sat', SUNDAY: 'Sun',
+const DAY_OF_WEEK = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+const DAY_SHORT: Record<string, string> = {
+  SUNDAY: 'Sun', MONDAY: 'Mon', TUESDAY: 'Tue', WEDNESDAY: 'Wed',
+  THURSDAY: 'Thu', FRIDAY: 'Fri', SATURDAY: 'Sat',
 };
-const DAY_INDEX: Record<string, number> = {
-  SUNDAY: 0, MONDAY: 1, TUESDAY: 2, WEDNESDAY: 3,
-  THURSDAY: 4, FRIDAY: 5, SATURDAY: 6,
-};
-function nextDateForDay(day: string): string {
-  const target = DAY_INDEX[day];
-  const today = new Date();
-  const diff = ((target - today.getDay() + 7) % 7) || 7;
-  const d = new Date(today);
-  d.setDate(today.getDate() + diff);
-  return d.toISOString().split('T')[0];
-}
 
 const DURATIONS = [
   { label: '1 Month',  months: 1 },
   { label: '3 Months', months: 3 },
   { label: '6 Months', months: 6 },
 ];
+
+function localDateStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
 
 const timeSlotService     = new TimeSlotService();
 const subscriptionService = new SubscriptionService();
@@ -42,14 +36,22 @@ export function SubscriptionCheckoutPage() {
 
   const plan = (location.state as { plan: MealPlan } | null)?.plan;
 
-  const [slots, setSlots]                   = useState<TimeSlot[]>([]);
-  const [slotsLoading, setSlotsLoading]     = useState(true);
-  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
+  const [slots, setSlots]               = useState<TimeSlot[]>([]);
+  const [slotsLoading, setSlotsLoading] = useState(true);
+  // dayOfWeek → slotId  (multi-day selection)
+  const [selectedSlots, setSelectedSlots] = useState<Record<string, string>>({});
   const [durationMonths, setDurationMonths] = useState(1);
-  const [autoRenew, setAutoRenew]           = useState(false);
-  const [submitting, setSubmitting]         = useState(false);
-  const [error, setError]                   = useState('');
-  const [step, setStep]                     = useState<'form' | 'success'>('form');
+  const [autoRenew, setAutoRenew]   = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError]           = useState('');
+  const [step, setStep]             = useState<'form' | 'success'>('form');
+
+  const [calendarDate, setCalendarDate] = useState<{ year: number; month: number }>(() => {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth() };
+  });
+  const [slotPickerOpen, setSlotPickerOpen] = useState(false);
+  const [slotPickerDay, setSlotPickerDay]   = useState<string | null>(null);
 
   useEffect(() => {
     if (!plan) { navigate('/premium'); return; }
@@ -66,29 +68,71 @@ export function SubscriptionCheckoutPage() {
       .finally(() => setSlotsLoading(false));
   }, [token]);
 
-  if (!plan) return null;
-
+  // Derived date values (computed before hooks so hooks order is stable)
   const startDate = new Date();
   startDate.setDate(startDate.getDate() + 1);
-  const startStr  = startDate.toISOString().split('T')[0];
-  const endDate   = new Date(startDate);
+  startDate.setHours(0, 0, 0, 0);
+  const startStr = localDateStr(startDate);
+  const endDate  = new Date(startDate);
   endDate.setMonth(endDate.getMonth() + durationMonths);
-  const endStr    = endDate.toISOString().split('T')[0];
-  const total     = plan.price * durationMonths;
+  const endStr   = localDateStr(endDate);
+  const total    = plan ? plan.price * durationMonths : 0;
+  const selectedDayCount = Object.keys(selectedSlots).length;
+
+  /* ── Calendar grid – must be before any conditional returns ── */
+  const calendarGrid = useMemo(() => {
+    const { year, month } = calendarDate;
+    const firstDay = new Date(year, month, 1);
+    const lastDay  = new Date(year, month + 1, 0);
+
+    const availableDaySet = new Set(slots.map((s) => s.day));
+    const selectedDaySet  = new Set(Object.keys(selectedSlots));
+
+    type Cell = null | {
+      dayNum: number;
+      dayOfWeek: string;
+      hasSlots: boolean;
+      inRange: boolean;   // within subscription period
+      isSelected: boolean;
+    };
+    const cells: Cell[] = [];
+
+    for (let i = 0; i < firstDay.getDay(); i++) cells.push(null);
+
+    for (let d = 1; d <= lastDay.getDate(); d++) {
+      const date      = new Date(year, month, d);
+      const ds        = localDateStr(date);
+      const dayOfWeek = DAY_OF_WEEK[date.getDay()];
+      const inRange   = ds >= startStr && ds <= endStr;
+      const hasSlots  = availableDaySet.has(dayOfWeek as TimeSlot['day']);
+      const isSelected = inRange && selectedDaySet.has(dayOfWeek);
+      cells.push({ dayNum: d, dayOfWeek, hasSlots, inRange, isSelected });
+    }
+
+    while (cells.length % 7 !== 0) cells.push(null);
+
+    const weeks: Cell[][] = [];
+    for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
+    return weeks;
+  }, [calendarDate, slots, selectedSlots, startStr, endStr]);
+
+  if (!plan) return null;
 
   const handleSubmit = async () => {
-    if (!selectedSlotId) { setError('Please select a delivery time slot.'); return; }
-    if (!token)          { navigate('/login'); return; }
+    if (selectedDayCount === 0) { setError('Please select at least one delivery day.'); return; }
+    if (!token) { navigate('/login'); return; }
     setError('');
     setSubmitting(true);
     try {
-      await subscriptionService.create(token, {
-        mealPlanId:  plan.id,
-        timeSlotId:  selectedSlotId,
-        startDate:   startStr,
-        endDate:     endStr,
-        isAutoRenew: autoRenew,
-      });
+      for (const [, slotId] of Object.entries(selectedSlots)) {
+        await subscriptionService.create(token, {
+          mealPlanId:  plan.id,
+          timeSlotId:  slotId,
+          startDate:   startStr,
+          endDate:     endStr,
+          isAutoRenew: autoRenew,
+        });
+      }
       setStep('success');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Subscription failed. Try again.');
@@ -110,7 +154,7 @@ export function SubscriptionCheckoutPage() {
         <p className="text-xs text-gray-400 mb-8">
           {new Date(startStr + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
           {' → '}
-          {new Date(endStr   + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+          {new Date(endStr + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
         </p>
         <button
           onClick={() => navigate('/premium')}
@@ -133,7 +177,7 @@ export function SubscriptionCheckoutPage() {
         <h1 className="text-xl font-bold text-gray-900">Subscription Checkout</h1>
       </div>
 
-      {/* Plan summary card */}
+      {/* Plan summary */}
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden mb-4">
         <img
           src={plan.imageUrl}
@@ -144,7 +188,9 @@ export function SubscriptionCheckoutPage() {
         <div className="p-4">
           <div className="flex items-center justify-between">
             <h2 className="font-bold text-gray-800 text-base">{plan.name}</h2>
-            <span className="text-orange-500 font-bold">₹{paiseToRupees(plan.price)}<span className="text-xs text-gray-400 font-normal">/mo</span></span>
+            <span className="text-orange-500 font-bold">
+              ₹{paiseToRupees(plan.price)}<span className="text-xs text-gray-400 font-normal">/mo</span>
+            </span>
           </div>
           <p className="text-gray-500 text-sm mt-0.5">{plan.description}</p>
           {plan.dishes.length > 0 && (
@@ -190,11 +236,13 @@ export function SubscriptionCheckoutPage() {
         </div>
       </div>
 
-      {/* Time Slot */}
-      <div className="bg-white rounded-2xl shadow-sm pt-4 pb-3 mb-4">
-        <p className="text-sm font-semibold text-gray-800 mb-3 px-4 flex items-center gap-1.5">
-          <FiClock size={14} className="text-orange-500" /> Delivery Time Slot
+      {/* Delivery Time Slot – Calendar */}
+      <div className="bg-white rounded-2xl shadow-sm pt-4 pb-4 mb-4">
+        <p className="text-sm font-semibold text-gray-800 mb-1 px-4 flex items-center gap-1.5">
+          <FiClock size={14} className="text-orange-500" /> Delivery Days & Times
         </p>
+        <p className="text-xs text-gray-400 px-4 mb-3">Tap any available date to add a delivery day</p>
+
         {slotsLoading ? (
           <div className="flex items-center gap-2 text-gray-400 text-sm px-4 pb-2">
             <FiLoader size={14} className="animate-spin" /> Loading…
@@ -202,36 +250,107 @@ export function SubscriptionCheckoutPage() {
         ) : slots.length === 0 ? (
           <p className="text-xs text-gray-400 px-4 pb-2">No slots available right now.</p>
         ) : (
-          <div className="flex gap-3 overflow-x-auto px-4 pb-1" style={{ scrollSnapType: 'x mandatory' }}>
-            {slots.map((slot) => {
-              const isSelected = slot.id === selectedSlotId;
-              const date = nextDateForDay(slot.day);
-              const dateLabel = new Date(date + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
-              return (
-                <button
-                  key={slot.id}
-                  onClick={() => setSelectedSlotId(slot.id)}
-                  style={{ scrollSnapAlign: 'start', minWidth: '100px' }}
-                  className={`flex-shrink-0 flex flex-col items-center gap-1 px-3 py-3 rounded-2xl border-2 transition-all relative ${
-                    isSelected ? 'border-orange-400 bg-orange-50' : 'border-gray-100 bg-white hover:border-orange-200'
-                  }`}
-                >
-                  {isSelected && (
-                    <div className="absolute -top-2 -right-2 w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center shadow">
-                      <FiCheck size={10} className="text-white" strokeWidth={3} />
+          <>
+            {/* Selected days chips */}
+            {selectedDayCount > 0 && (
+              <div className="px-4 mb-3 flex flex-wrap gap-2">
+                {Object.entries(selectedSlots).map(([day, slotId]) => {
+                  const slot = slots.find((s) => s.id === slotId);
+                  return (
+                    <div key={day} className="flex items-center gap-1.5 bg-orange-50 border border-orange-200 rounded-full px-3 py-1">
+                      <span className="text-xs font-semibold text-orange-700">{DAY_SHORT[day]}</span>
+                      {slot && <span className="text-xs text-orange-500">{slot.startTime}–{slot.endTime}</span>}
+                      <button
+                        onClick={() => setSelectedSlots((prev) => { const n = { ...prev }; delete n[day]; return n; })}
+                        className="ml-0.5 hover:text-red-400 text-gray-400"
+                      >
+                        <FiX size={11} />
+                      </button>
                     </div>
-                  )}
-                  <span className={`text-base font-bold leading-none ${isSelected ? 'text-orange-500' : 'text-gray-800'}`}>
-                    {DAY_LABEL[slot.day]}
-                  </span>
-                  <span className="text-xs text-gray-400">{dateLabel}</span>
-                  <div className={`w-8 h-px ${isSelected ? 'bg-orange-300' : 'bg-gray-200'}`} />
-                  <span className={`text-xs font-semibold ${isSelected ? 'text-orange-600' : 'text-gray-600'}`}>{slot.startTime}</span>
-                  <span className="text-xs text-gray-400">to {slot.endTime}</span>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Calendar */}
+            <div className="px-4">
+              {/* Month navigation */}
+              <div className="flex items-center justify-between mb-3">
+                <button
+                  onClick={() => setCalendarDate((d) => {
+                    const m = d.month === 0 ? 11 : d.month - 1;
+                    const y = d.month === 0 ? d.year - 1 : d.year;
+                    return { year: y, month: m };
+                  })}
+                  className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <FiChevronLeft size={18} className="text-gray-600" />
                 </button>
-              );
-            })}
-          </div>
+                <span className="text-sm font-bold text-gray-800">
+                  {new Date(calendarDate.year, calendarDate.month).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}
+                </span>
+                <button
+                  onClick={() => setCalendarDate((d) => {
+                    const m = d.month === 11 ? 0 : d.month + 1;
+                    const y = d.month === 11 ? d.year + 1 : d.year;
+                    return { year: y, month: m };
+                  })}
+                  className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <FiChevronRight size={18} className="text-gray-600" />
+                </button>
+              </div>
+
+              {/* Weekday headers */}
+              <div className="grid grid-cols-7 mb-1">
+                {['Su', 'M', 'T', 'W', 'Th', 'F', 'S'].map((h) => (
+                  <div key={h} className="text-center text-xs text-gray-400 font-medium py-1">{h}</div>
+                ))}
+              </div>
+
+              {/* Date grid */}
+              {calendarGrid.map((week, wi) => (
+                <div key={wi} className="grid grid-cols-7">
+                  {week.map((cell, di) => {
+                    if (!cell) return <div key={di} />;
+                    const { dayNum, dayOfWeek, hasSlots, inRange, isSelected } = cell;
+                    const isDisabled = !inRange || !hasSlots;
+                    return (
+                      <button
+                        key={di}
+                        disabled={isDisabled}
+                        onClick={() => {
+                          setSlotPickerDay(dayOfWeek);
+                          setSlotPickerOpen(true);
+                        }}
+                        className={`flex items-center justify-center mx-auto my-0.5 w-9 h-9 rounded-full text-sm font-medium transition-all
+                          ${isSelected
+                            ? 'bg-orange-500 text-white'
+                            : isDisabled
+                            ? 'text-gray-200 cursor-not-allowed'
+                            : 'text-gray-700 hover:bg-orange-50 hover:text-orange-600'}`}
+                      >
+                        {dayNum}
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
+
+              {/* Legend */}
+              <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-100">
+                <div className="flex items-center gap-1.5 text-xs text-gray-400">
+                  <div className="w-3 h-3 rounded-full bg-orange-500" /> Selected
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-gray-400">
+                  <div className="w-3 h-3 rounded-full border border-gray-300" /> Available
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-gray-400">
+                  <div className="w-3 h-3 rounded-full bg-gray-100" /> Outside range
+                </div>
+              </div>
+            </div>
+          </>
         )}
       </div>
 
@@ -272,8 +391,61 @@ export function SubscriptionCheckoutPage() {
         disabled={submitting}
         className="w-full bg-orange-500 hover:bg-orange-600 disabled:opacity-60 text-white font-bold py-4 rounded-2xl text-base transition-colors shadow-lg shadow-orange-200"
       >
-        {submitting ? 'Processing…' : `Subscribe Now · ₹${paiseToRupees(total)}`}
+        {submitting
+          ? 'Processing…'
+          : selectedDayCount > 1
+          ? `Subscribe (${selectedDayCount} days/week) · ₹${paiseToRupees(total * selectedDayCount)}`
+          : `Subscribe Now · ₹${paiseToRupees(total)}`}
       </button>
+
+      {/* Time slot picker bottom sheet */}
+      {slotPickerOpen && slotPickerDay && (
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center"
+          onClick={() => setSlotPickerOpen(false)}
+        >
+          <div
+            className="bg-white w-full max-w-lg rounded-t-3xl px-5 pt-4"
+            style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 80px)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-5" />
+            <h3 className="text-base font-bold text-gray-900 mb-0.5">Select Delivery Time</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              Every {slotPickerDay.charAt(0) + slotPickerDay.slice(1).toLowerCase()}
+            </p>
+            <div className="flex flex-col gap-3 overflow-y-auto max-h-[45vh]">
+              {slots
+                .filter((s) => s.day === slotPickerDay)
+                .map((slot) => {
+                  const isSelected = selectedSlots[slotPickerDay] === slot.id;
+                  return (
+                    <button
+                      key={slot.id}
+                      onClick={() => {
+                        setSelectedSlots((prev) => ({ ...prev, [slotPickerDay]: slot.id }));
+                        setSlotPickerOpen(false);
+                      }}
+                      className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl border-2 transition-all ${
+                        isSelected ? 'border-orange-400 bg-orange-50' : 'border-gray-200 hover:border-orange-300'
+                      }`}
+                    >
+                      <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors ${
+                        isSelected ? 'border-orange-500 bg-orange-500' : 'border-gray-300'
+                      }`}>
+                        {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
+                      </div>
+                      <p className={`text-sm font-bold flex-1 text-left ${isSelected ? 'text-orange-600' : 'text-gray-800'}`}>
+                        {slot.startTime} – {slot.endTime}
+                      </p>
+                      {isSelected && <FiCheck size={16} className="text-orange-500 flex-shrink-0" />}
+                    </button>
+                  );
+                })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

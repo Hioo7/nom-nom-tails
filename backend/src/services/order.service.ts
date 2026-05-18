@@ -75,7 +75,7 @@ interface IngredientAggregation {
   availableQty: number;
 }
 
-const UPCOMING_ORDER_STATUSES: OrderStatus[] = [OrderStatus.CONFIRMED];
+const UPCOMING_ORDER_STATUSES: OrderStatus[] = [OrderStatus.CONFIRMED];  
 
 function roundQuantity(value: number): number {
   return Number(value.toFixed(3));
@@ -87,7 +87,7 @@ function getUpcomingWindow(referenceDate: Date = new Date()): { start: Date; end
   start.setDate(start.getDate() + 1);
 
   const end = new Date(start);
-  end.setDate(end.getDate() + 1);
+  end.setDate(end.getDate() + 1); // show up to 1 day ahead
   end.setHours(23, 59, 59, 999);
 
   return { start, end };
@@ -101,10 +101,6 @@ function getTodayWindow(): { start: Date; end: Date } {
   return { start, end };
 }
 
-function isWithinUpcomingWindow(deliveryDate: Date, referenceDate: Date = new Date()): boolean {
-  const { start, end } = getUpcomingWindow(referenceDate);
-  return deliveryDate >= start && deliveryDate <= end;
-}
 
 function toOrderNumber(orderId: string): string {
   return orderId.slice(-8).toUpperCase();
@@ -241,6 +237,22 @@ class OrderService {
     return OrderService.instance;
   }
 
+  async listByMonth(year: number, month: number): Promise<SafeUpcomingOrder[]> {
+    const start = new Date(year, month - 1, 1, 0, 0, 0, 0);
+    const end = new Date(year, month, 0, 23, 59, 59, 999);
+
+    const orders = await prisma.order.findMany({
+      where: {
+        deliveryDate: { gte: start, lte: end },
+        status: { notIn: [OrderStatus.CANCELLED] },
+      },
+      include: { customer: true, timeSlot: true, items: true },
+      orderBy: [{ deliveryDate: 'asc' }, { createdAt: 'asc' }],
+    });
+
+    return orders.map(toSafeUpcomingOrder);
+  }
+
   async listUpcomingOrders(): Promise<SafeUpcomingOrder[]> {
     const { start: upcomingStart, end: upcomingEnd } = getUpcomingWindow();
     const { start: todayStart, end: todayEnd } = getTodayWindow();
@@ -365,50 +377,50 @@ class OrderService {
         throw new AppError(404, 'Order not found');
       }
 
-      const { start: todayStart, end: todayEnd } = getTodayWindow();
-      const isTodayOrder = order.deliveryDate >= todayStart && order.deliveryDate <= todayEnd;
-      if (!isTodayOrder && !isWithinUpcomingWindow(order.deliveryDate)) {
-        throw new AppError(400, 'Only upcoming orders can be fulfilled here');
-      }
-
       if (!UPCOMING_ORDER_STATUSES.includes(order.status)) {
         throw new AppError(400, 'Order is already fulfilled or cannot be fulfilled');
       }
 
-      const requiredIngredients = aggregateProcurementRequirements([order]);
-      const shortages = requiredIngredients.filter(
-        (ingredient) => ingredient.requiredQty > ingredient.availableQty,
-      );
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const isPastOrder = order.deliveryDate < today;
 
-      if (shortages.length > 0) {
-        const ingredientNames = shortages.map((ingredient) => ingredient.ingredientName).join(', ');
-        throw new AppError(409, `Insufficient ingredient stock for: ${ingredientNames}`);
-      }
+      if (!isPastOrder) {
+        const requiredIngredients = aggregateProcurementRequirements([order]);
+        const shortages = requiredIngredients.filter(
+          (ingredient) => ingredient.requiredQty > ingredient.availableQty,
+        );
 
-      for (const ingredient of requiredIngredients) {
-        if (ingredient.requiredQty <= 0) {
-          continue;
+        if (shortages.length > 0) {
+          const ingredientNames = shortages.map((ingredient) => ingredient.ingredientName).join(', ');
+          throw new AppError(409, `Insufficient ingredient stock for: ${ingredientNames}`);
         }
 
-        const result = await tx.ingredient.updateMany({
-          where: {
-            id: ingredient.ingredientId,
-            availableQty: {
-              gte: ingredient.requiredQty,
-            },
-          },
-          data: {
-            availableQty: {
-              decrement: ingredient.requiredQty,
-            },
-          },
-        });
+        for (const ingredient of requiredIngredients) {
+          if (ingredient.requiredQty <= 0) {
+            continue;
+          }
 
-        if (result.count !== 1) {
-          throw new AppError(
-            409,
-            `Ingredient stock changed before fulfillment for ${ingredient.ingredientName}`,
-          );
+          const result = await tx.ingredient.updateMany({
+            where: {
+              id: ingredient.ingredientId,
+              availableQty: {
+                gte: ingredient.requiredQty,
+              },
+            },
+            data: {
+              availableQty: {
+                decrement: ingredient.requiredQty,
+              },
+            },
+          });
+
+          if (result.count !== 1) {
+            throw new AppError(
+              409,
+              `Ingredient stock changed before fulfillment for ${ingredient.ingredientName}`,
+            );
+          }
         }
       }
 

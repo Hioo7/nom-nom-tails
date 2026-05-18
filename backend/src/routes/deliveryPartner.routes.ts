@@ -5,6 +5,7 @@ import {
   acceptDeliveryTask,
   completeDeliveryTask,
   failDeliveryTask,
+  listAllAvailableDeliveryTasks,
   listAvailableDeliveryTasks,
   listDeliveryPartners,
   listMyDeliveryTasks,
@@ -30,6 +31,7 @@ const upload = multer({
 
 router.get('/', ...adminGuard, listDeliveryPartners);
 router.get('/me/available-tasks', ...partnerGuard, listAvailableDeliveryTasks);
+router.get('/me/all-available-tasks', ...partnerGuard, listAllAvailableDeliveryTasks);
 router.get('/me/tasks', ...partnerGuard, listMyDeliveryTasks);
 router.post('/tasks/:id/accept', ...partnerGuard, acceptDeliveryTask);
 router.post('/tasks/:id/fail', ...partnerGuard, failDeliveryTask);

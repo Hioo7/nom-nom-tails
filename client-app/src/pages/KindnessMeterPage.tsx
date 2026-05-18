@@ -379,7 +379,6 @@ function PersonalKindnessView({ orders }: { orders: Order[] }) {
   const { user } = useAuth();
   const { total: totalContributed, count: orderCount } = computeKindness(orders);
 
-  const dogsHelped = Math.max(0, Math.floor(totalContributed / 100));
   const monthlyPercent = Math.min(100, Math.round((totalContributed / MONTHLY_GOAL) * 100));
   const currentTier = getCurrentTier(totalContributed);
   const firstName = user?.name?.split(' ')[0] ?? 'Your';
@@ -390,11 +389,10 @@ function PersonalKindnessView({ orders }: { orders: Order[] }) {
       <TierProgressTrack total={totalContributed} currentTier={currentTier} />
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 gap-3">
         {[
           { label: 'Total Raised', value: `₹${totalContributed.toLocaleString('en-IN')}`, color: 'text-orange-500' },
           { label: 'Orders Made', value: String(orderCount), color: 'text-amber-500' },
-          { label: 'Dogs Helped', value: `~${dogsHelped}`, color: 'text-green-500' },
         ].map((s) => (
           <div key={s.label} className="bg-white rounded-2xl p-3 text-center shadow-sm">
             <p className={`text-xl font-black ${s.color}`}>{s.value}</p>
@@ -411,11 +409,6 @@ function PersonalKindnessView({ orders }: { orders: Order[] }) {
             <span className="font-bold text-orange-600">₹{totalContributed.toLocaleString('en-IN')}</span>{' '}
             has funded emergency medical welfare for injured animals and critical rescue missions.
           </p>
-          {dogsHelped > 0 && (
-            <p className="text-xs text-gray-500 mt-2 font-medium">
-              🐕 Helped fund care for ~{dogsHelped} stray {dogsHelped === 1 ? 'dog' : 'dogs'}
-            </p>
-          )}
         </div>
       ) : (
         <div className="bg-orange-50 border border-orange-100 rounded-2xl p-4 text-center">
