@@ -5,6 +5,7 @@ export const DUMMY_USER: SafeUser = {
   id: 'dummy-user-1',
   name: 'Roan Atkinson',
   email: 'roan@example.com',
+  phone: null,
   role: 'CUSTOMER',
   isActive: true,
   isLoyalty: true,
