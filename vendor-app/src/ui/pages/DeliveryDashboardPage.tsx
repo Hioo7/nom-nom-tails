@@ -6,6 +6,7 @@ import {
   createDeliveryDashboardSearchParams,
   parseDeliveryDashboardTab,
   parseDeliveryOrdersSection,
+  type DeliveryOrdersSection,
 } from '../components/DeliveryDashboard/deliveryNavigation';
 import ProfileTab from '../components/shared/ProfileTab';
 
@@ -16,7 +17,7 @@ export default function DeliveryDashboardPage() {
   const refreshToken = searchParams.get('refresh') ?? '';
 
   const updateDashboardState = useCallback(
-    (tab: 'orders' | 'profile', section: 'available' | 'tasks', nextRefreshToken?: string) => {
+    (tab: 'orders' | 'profile', section: DeliveryOrdersSection, nextRefreshToken?: string) => {
       setSearchParams(createDeliveryDashboardSearchParams(tab, section, nextRefreshToken), {
         replace: true,
       });
